@@ -189,6 +189,7 @@ let hdr = PacketHeader { kind: 1i8u, payload_len: 20i32u }
 
 - フィールドは並べ替えを行わず宣言順に C 標準アライメント（`pack = N` 指定時は最大アライメント `N`）で配置され、`tsuzuri build --emit header` では `#pragma pack` とサイズ・オフセット検証用の `_Static_assert` を含む C 構造体定義が出力されます。
 - 許可されるフィールド型は、固定幅数値（`i8`〜`i128`、`i8u`〜`i128u`、`f16`〜`f128`、`d32`〜`d128`）、数値の固定長配列 `[T; N]`（`N >= 1`）、入れ子の `@c_layout` レコード、`extern type copy` ハンドル、`Maybe<Handle>`、`FnPtr<F>`、および入力専用の `ref ZString` / `Maybe<ref ZString>` です。
+- `extern def` の引数・結果に `ref` なしで書いた `@c_layout` レコードは C の値渡し・値返し（C の `T`）で、`ref R` は `const T *`、`ref mut R` は `T *` です。`export def` はポインターで受け渡します。詳細は[ネイティブ連携](../compiler/native-interop.md#構造体の値渡しと値返し)を参照してください。
 - `bool` フィールドは C の `_Bool`（1 B）と Win32 `BOOL`（4 B）の差異による ABI 事故を防ぐため `E1008` で拒否されます（`i8u` または `i32` を明示します）。また、空レコード、ジェネリック型パラメータ、リージョン、`Drop` 実装を持つレコードに `@c_layout` を付けることもできません（`E1008`）。詳細は[ネイティブ連携](../compiler/native-interop.md)を参照してください。
 
 ## 自動導出 `deriving` と `@json` 属性

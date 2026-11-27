@@ -106,6 +106,7 @@ TSUZURI_RUNNER="qemu-aarch64 -L /usr/aarch64-linux-gnu" \
 言語仕様上の意味は不変ですが、ターゲットに応じて以下の低レベル表現が切り替わります。
 
 - **シンボル可視性と ABI**: Windows ターゲットでは `export def` に `dllexport` が付与され、C 構造体や呼び出し規約も対象 OS（System V AMD64 / AAPCS64 / Windows x64 / Windows Arm64）に従います。
+- **構造体の値渡し（`@c_layout`）**: `extern def` の `ref` のない `@c_layout` レコードは、9 種のネイティブターゲットすべてで C の ABI どおりに受け渡します（Windows x64 は大きさで整数レジスターか複写へのポインター、AArch64 は HFA・整数レジスター・`x8`、System V x86-64 は 8 バイトごとの分類）。`wasm32`・`wasm64` では `E1008`（`abi_native_only`）です。
 - **`@cpu` マルチバージョニング**: Linux x64 では `sse4.2`・`avx2`・`avx512`、Linux Arm64 では `sve`・`sve2` の各バリアントを生成し、それ以外のターゲットでは基準のポータブル実装のみを生成します。
 - **`Math.fma`（融合積和演算）**: Arm64 ネイティブではハードウェア FMA 命令に下げ、x64 ネイティブおよび WebAssembly では単一丸めを厳密に満たすソフトウェアルーチンを呼び出します（得られるビット列は全環境で同一です）。
 - **`--cpu native` の制約**: ビルド機自身の CPU 命令セットを検出して特化するオプションであるため、クロスコンパイル時（ホストと異なる `--target TRIPLE` 指定時）に併用すると `E2000` になります。クロスコンパイル時は既定の `--cpu generic` を使用します。

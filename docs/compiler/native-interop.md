@@ -26,7 +26,7 @@ Tsuzuri はガベージコレクタや重量級ランタイムへの依存なし
 | 共有借用バッファ（`ref [i64]`・`ref [f64]`・`ref [ubyte]`・`ref string`・`ref utf8string`） | `const T *arg_ptr, int64_t arg_len` | 呼び出し中のみ読み取り（複製も解放もしない）。`extern` では `@count` で長さ型を変更可能 |
 | 所有戻り値（配列・`string`・`utf8string`） | 先頭引数 `tsuzuri_*_buffer *out`、戻り値 `void` | `{ ptr, len }` を書き込む。使用後はホストが `tsuzuri_free(out.ptr)` で解放 |
 | スカラーレコード | 入力は `const tz_record_* *`、戻り値は先頭 out ポインタ | フィールドは宣言順に並び、狭い整数や `bool` は 32 bit に正規化 |
-| `@c_layout` レコード | `struct tz_record_*`（値ポインタ渡し / out ポインタ） | C の構造体とバイト単位で一致するフィールド型・アライメント・パディング |
+| `@c_layout` レコード | `extern def` の `ref` なしは C の値渡し・値返し（`tz_record_*` そのもの）。`ref R` は `const tz_record_* *`、`ref mut R` は `tz_record_* *`。`export def` は入力が `const tz_record_* *`、結果が先頭の out ポインター | C の構造体とバイト単位で一致するフィールド型・アライメント・パディング |
 | 不透明ハンドル（`extern type`） | `typedef struct tz_handle_*_s *tz_handle_*` | 1 ポインタ値（`ref H` も二重ポインタではなく同じ 1 ポインタ） |
 
 `i128`・`f16`・`f128`・10 進浮動小数点（`d32`〜`d128`）・文字型（`char` / `utf8char`）・通常の `union`・タプル・連結リスト・クロージャ関数値・戻り値の借用は公開 ABI に直接載せることはできません（`E1008`）。
