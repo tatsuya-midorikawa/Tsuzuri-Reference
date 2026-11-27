@@ -92,7 +92,7 @@ tsuzuri fix --edition 2028 --from 2027 app/
 
 ### C ABI の既知の変更
 
-- **`@c_layout` レコードの `extern def` での値渡し**: `ref` のない `@c_layout` レコードを `extern def` の引数・結果に書いたときの C ABI が変わりました。以前は引数を `const T *`、結果を先頭の out 引数で受け渡していましたが、現在は C の構造体の値渡し・値返し（C の `T`）です。ソースはそのままコンパイルでき、診断も出ません。ポインターを取る C の関数をこの形で宣言していたプログラムは、引数を `ref R` に、out 引数を `ref mut R` の引数に書き直してください。`@c_layout` のないレコード、`ref R`・`ref mut R`、`export def`、コールバックは変わりません（[ネイティブ連携と C ABI](./native-interop.md#構造体の値渡しと値返し)）。
+- **`@c_layout` レコードの `extern def` での値渡し**: `ref` のない `@c_layout` レコードを `extern def` の引数・結果に書いたときの C ABI が変わりました。以前は引数を `const T *`、結果を先頭の out 引数で受け渡していましたが、現在は C の構造体の値渡し・値返し（C の `T`）です。ソースはそのままコンパイルでき、診断も出ません。ポインターを取る C の関数をこの形で宣言していたプログラムは、引数を `ref R` に、out 引数を `ref mut R` の引数に書き直してください。`@c_layout` のないレコード、`ref R`・`ref mut R`、`export def`、コールバックは変わりません（[ネイティブ連携と C ABI](./native-interop.md#構造体の値渡しと値返し)）。高速バックエンド（`--backend fast`）は、スカラー 1 つに下がらない値渡しを `E2002` で拒むので、そのプログラムは既定の `--backend llvm` でビルドします。
 
 ## `tsuzuri api-diff` による公開 API 互換性検査
 

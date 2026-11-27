@@ -180,6 +180,7 @@ extern "PtInRect" def pt_in_rect :: ref Rect -> Point -> i32
 - `FnPtr` や `ref ZString` のフィールドを持つ `@c_layout` レコードは入力専用で、結果にすると `E1008` です。
 - WebAssembly で到達した値渡しは `E1008`（`abi_native_only`）です（`ref R` は WebAssembly でも使えます）。x86-64 と AArch64 以外のターゲットは `E1008`（`abi_record_by_value_target`）です。`tsuzuri check` はターゲットを知らないので受け付け、誤りは `build` で報告されます。
 - リンク名のない `extern def` の C ヘッダーのプロトタイプは、値渡しを `tz_record_… f(tz_record_… arg0)` の形で出力します。
+- 高速バックエンド（`--backend fast`）は、そのターゲットでスカラー 1 つ（整数か浮動小数点数）に下がる構造体だけを値で受け渡します。表のほかの形（複数のレジスター、HFA、ポインター、隠れた引数）になる構造体は `E2002` で、既定の `--backend llvm` でビルドします。
 - 宣言が C 側の構造体と一致することは、ほかの `extern` と同じく宣言を書く人の責任です。可変長引数の関数と、16 バイト以上の整列を持つ構造体は扱いません。
 - **互換性**: 以前の版は `ref` のない `@c_layout` レコードも `const T *`（結果は先頭の out 引数）で受け渡していました。ポインターを取る C の関数の宣言は、引数を `ref R` に、out 引数を `ref mut R` に書き直します（[安定性と互換性ポリシー](./stability.md#c-abi-の既知の変更)）。
 
