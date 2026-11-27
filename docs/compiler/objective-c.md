@@ -191,7 +191,7 @@ C の関数にも物体を受け渡せます。
 - `tsuzuri check` はどのホストでも宣言と使用を受理します。`build` で到達した Objective-C の使用は、WebAssembly では `E1008`（`abi_native_only`）、Apple でないネイティブのターゲットでは `E1008`（`abi_apple_only`）になります。宣言だけなら出力は変わりません。
 - Objective-C を使うプログラムのリンクには、コンパイラが `-lobjc` を足します。framework のクラスには `--framework Foundation`・`--framework AppKit`（または `Tsuzuri.toml` の `[native] frameworks`）が要ります。
 - `@weak` を `extern class` の前に書くと、古い OS にないクラスを宣言できます。クラスの参照を読むたびに不在を検査し、不在ならメッセージを出してトラップします。
-- `ObjC.retain`・`ObjC.downcast`・メッセージ送信・物体の drop は効果 `extern` と権限 `ffi` の対象です。`@trusted` のない `extern class`・`extern category` を使うと `W1010` の対象になり、`tsuzuri audit` はクラスとカテゴリーごとに行を出します。
+- `ObjC.retain`・`ObjC.downcast`・メッセージ送信・物体の drop は効果 `extern` と権限 `ffi` の対象です。`@trusted` のない `extern class`・`extern category` を使うと `W1010` の対象になり、`tsuzuri audit` はクラスとカテゴリーごとに行を出します。継承したメンバーを派生クラスの名前で呼ぶ送信（`Derived.m`）は、呼び出しが名指すクラスと、メンバーを宣言した基底クラスの両方の使用として数えます（`@trusted` のない基底クラスは、`@trusted` の付いた派生クラスを通して使っても `W1010` の対象です）。
 - tzroutine を起動するプログラムでは、メッセージ送信は外部関数の呼び出しと同じくブロッキング呼び出しとして扱われ、送信の間にほかの tzroutine が進めます。
 
 ## 注意と制限
