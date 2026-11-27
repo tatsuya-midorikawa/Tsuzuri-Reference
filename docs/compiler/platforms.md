@@ -60,6 +60,7 @@ Linux では C ライブラリの種類（`gnu` = glibc 動的リンク、`musl`
 
 - **tzroutine ランタイム**: 全 9 種のネイティブターゲットで M:N スケジューラが動作します（Windows では Win32 Fiber を用いてコンテキストスイッチを行います）。
 - **OS API とエラーコード**: `File`・`Dir`・`Env`・`Time`・`Random`・`Process`・`Net` はすべてのネイティブターゲットで利用できます。`Os.Error.code` は macOS / Linux では POSIX の `errno`、Windows では Win32 エラーコード（または Winsock エラーコード）を保持します。
+- **macOS だけの API**: [`MainThread`](../stdlib/sync/mainthread.md)（`post`・`after`・`is_current`）と、メインスレッド専用ハンドル（`extern type main`・`extern class main`）の入口の検査は、macOS（`aarch64-apple-darwin`）でだけビルドできます。他のネイティブターゲットでは `E2002`（`platform_unsupported_api`）、WebAssembly では `E2000`（`wasm_main_thread_unsupported`）になります。
 - **デバッグ情報（`-g`）**: Mach-O 実行ファイルの `.dwarf` バンドル生成には `dsymutil`（macOS ホスト）、MSVC 実行ファイルの `.pdb` 生成には MSVC `link.exe`（Windows ホスト）が必要なため、別 OS ホストからのクロスビルドでこれらを要する `-g` を指定すると `E2000` になります（オブジェクトや LLVM IR への DWARF 出力はどのホストからでも可能です）。なお、Windows Arm64 版の VS Code 拡張機能では編集・診断・ビルド・実行・テストがすべて動作しますが、同梱 CodeLLDB が未提供のため IDE 上のソースデバッグのみ対象外です。
 - **macOS のアプリケーションバンドル**: macOS のホストでは `--emit app` が、実行ファイル・`Info.plist`・資源を `Name.app` に組み立てて ad-hoc で署名します（[macOS のアプリケーションバンドル](./macos-app-bundle.md)）。バンドルの署名に `codesign` を使うため、ほかの OS のホストでは `E2000` です。Developer ID の署名と公証には未対応で、`embed` した `@rpath` の dylib を読ませるには `--rpath @executable_path/../Frameworks` を指定します。
 

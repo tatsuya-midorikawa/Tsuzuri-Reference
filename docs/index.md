@@ -153,6 +153,7 @@
 - [Channel、SendOnly、ReceiveOnly](./stdlib/sync/channel.md) — `tzroutine` 間で値を送受信する双方向/単方向チャネル（バッファなし・容量付き対応）
 - [DataChannel](./stdlib/sync/datachannel.md) — 送信端 `Sender` と受信端 `Receiver` を分離した容量付き MPMC キュー（WASM `threads` 対応）
 - [Routine](./stdlib/sync/routine.md) — `tzroutine` の動的起動、協調的 `yield`、借用共有スコープ `Routine.scope`、OS スレッド固定
+- [MainThread](./stdlib/sync/mainthread.md) — 処理をプロセスのメインスレッド（UI スレッド）へ戻す `post`・`after` とメインスレッド判定 `is_current`（macOS）
 - [Atomic](./stdlib/sync/atomic.md) — 整数および `bool` に対するロックフリーなアトミック読み書き・CAS・算術更新
 - [Mutex](./stdlib/sync/mutex.md) — 共有借用越しに内部値を排他保護するミューテックス `Mutex<'a>`
 - [RwMutex](./stdlib/sync/rwmutex.md) — 複数同時読み取りと単一排他書き込みを制御する読み書きロック `RwMutex<'a>`
