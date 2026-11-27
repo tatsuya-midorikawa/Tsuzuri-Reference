@@ -196,7 +196,7 @@ C の関数にも物体を受け渡せます。
 
 ## 注意と制限
 
-- **autorelease pool**: +0 の結果は受け取った直後に retain しますが、呼ばれた側の中で autorelease された物体は pool に入ります。pool は `objc_autoreleasePoolPush`・`objc_autoreleasePoolPop` を `extern` で宣言して使います。pool のないスレッド（tzroutine）では、そのスレッドが終わるまで残ります。
+- **autorelease pool**: +0 の結果は受け取った直後に retain しますが、呼ばれた側の中で autorelease された物体は pool に入ります。pool は `objc_autoreleasePoolPush`・`objc_autoreleasePoolPop` を `extern` で宣言して使います。pool は OS スレッドのものです。tzroutine は待機から別のワーカースレッドで再開することがあるので、tzroutine を起動するプログラムでは、push・作業・pop の全体を 1 つの [`Routine.with_locked_thread`](../stdlib/sync/routine.md) のコールバックの中で実行します（push と違うスレッドで pop すると異常終了します）。pool のないスレッドで autorelease された物体は、そのワーカースレッドが終わるまで残ります。tzroutine が終わってもワーカースレッドは終わらないので、そこでは解放されません。
 - **`releasedWhenClosed`**: コードで作った `NSWindow` は、既定では `close` のときに自分を release します。Tsuzuri の所有と二重になるので、`close` の前に `setReleasedWhenClosed:` へ `false` を送ります。
 - **セレクターの省略**: 名前とセレクターが同じときだけ省略できます。`double_value :: unit -> f64` はセレクター `double_value` に送り、実行時に例外で異常終了します。
 - **バッファの長さ**: 長さは要素の数です。`ref [i64]` を `initWithBytes:length:` に渡してもバイト数にはなりません。
