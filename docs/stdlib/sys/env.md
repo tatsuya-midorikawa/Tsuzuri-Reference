@@ -1,6 +1,6 @@
 # Env
 
-`Env` は、プロセス起動時のコマンドライン引数・環境変数・カレントディレクトリを読み取る標準モジュールです。3 つの関数はいずれも遅延アクション `IO<Result<'a, Os.Error>>` を返し、実行されるまで OS へ問い合わせません。マルチスレッド実行時の安全性を保つため、環境変数やカレントディレクトリを書き換える関数は提供されていません。
+`Env` は、プロセス起動時のコマンドライン引数・環境変数・カレントディレクトリと、ホスト OS の版・実行ファイルのパスを読み取る標準モジュールです。5 つの関数はいずれも遅延アクション `IO<Result<'a, Os.Error>>` を返し、実行されるまで OS へ問い合わせません。マルチスレッド実行時の安全性を保つため、環境変数やカレントディレクトリを書き換える関数は提供されていません。
 
 すべての関数にパッケージ権限 `env` が必要です。権限の宣言と検査の詳細は [パッケージ管理](../../modules/packages.md) を参照してください。
 
@@ -10,6 +10,8 @@
 - `Env.var name` は未設定の環境変数に対してエラーではなく `Ok None` を返し、空の値に設定されている場合は `Ok (Some "")` を返します。
 - 空文字列・`=` を含む名前・NUL を含む名前を `Env.var` に渡すと、OS 問い合わせ前に `InvalidInput` となります。
 - `Env.current_dir ()` は OS が報告する現在の作業ディレクトリを返します。
+- `Env.os_version ()` はホスト OS の版の文字列を返します。
+- `Env.executable_path ()` は実行中のプロセスの実行ファイルの絶対パスを返します。Finder から起動した macOS のアプリケーションは作業ディレクトリが `/` になるため、バンドル内の資源はこのパスから探します。
 
 ## コマンドライン引数・環境変数・作業ディレクトリの取得
 
@@ -62,10 +64,33 @@ POSIX 環境では親プロセスが分割した `argv` 配列をそのまま受
 - **`Env.current_dir ()`**:
   - 相対パスで [`File`](./file.md) や [`Dir`](./dir.md) を呼び出した際の起点となる作業ディレクトリ文字列を返します。Windows では `C:\work` のように `\` 区切りで返されます。
 
+## OS の版と実行ファイルのパス
+
+- **`Env.os_version ()`**: ホスト OS が報告する版の文字列です。macOS は製品の版（`sysctlbyname("kern.osproductversion")`。`15.1` など）、Linux は `uname` のカーネル release、Windows は `RtlGetVersion` の `major.minor.build` です。
+- **`Env.executable_path ()`**: 実行中のプロセスの実行ファイルの絶対パスを、アクションを実行した時点で OS に問い合わせて返します。
+  - macOS は `_NSGetExecutablePath` の結果を `realpath` で正規化したパス、Linux は `/proc/self/exe` が指す正規化済みのパスです。シンボリックリンク経由や相対パスで起動しても、実体のパスが返ります。Linux で実行中に実行ファイルを削除すると、末尾に ` (deleted)` が付いたパスがそのまま返ります。
+  - Windows は `GetModuleFileNameW` が報告するパスで、正規化はしません（短い名前や大文字小文字は起動時の指定のままです）。
+  - OS が返したパスが UTF-8（Windows は UTF-16）として不正な場合は、置換せず `InvalidEncoding`（`code == 0`）を返します。OS の失敗は `Os.Error` の `code` に errno か Win32 のエラーコードが入ります。
+  - `tsuzuri run` と `tsuzuri test` では、コンパイラが作った一時的な実行ファイルのパスが返ります。
+  - macOS のアプリケーションバンドル（[`--emit app`](../../compiler/platforms.md)）の中では `…/Name.app/Contents/MacOS/Name` が返るので、資源は `Path` で `../Resources/…` をたどって探します。隔離属性（quarantine）の付いたバンドルを Finder から開くと、OS が読み取り専用の別の場所へ移して起動し（App Translocation）、その場所のパスが返ります。バンドルの外のファイルを相対パスで当てにしないでください。
+
+```tsuzuri run=true%0Atrue
+def main :: unit -> i32 = \() ->
+    let! version = Env.os_version ()
+    do! IO.writeln (match version with
+        | Result.Ok text -> $"{text.length > 0}"
+        | Result.Error error -> Os.message error)
+    let! executable = Env.executable_path ()
+    do! IO.writeln (match executable with
+        | Result.Ok path -> $"{path.length > 0}"
+        | Result.Error error -> Os.message error)
+    0
+```
+
 ## 対応環境
 
 - **ネイティブ（Linux・macOS・Windows）**: 5 環境すべてで動作します。Windows では Win32 API で実装され、`Os.Error.code` は Win32 エラーコードとなります。
-- **WebAssembly / WASI**: 既定の `wasm32` ターゲットでは `Env` の関数に到達するビルドが `E2000` で拒否されます。`--wasm-host wasi` 指定時は WASI preview1 の `args_get` / `environ_get` にコンパイルされ、`Env.current_dir ()` は最初の preopen ディレクトリ名を返します（[WebAssembly](../../compiler/webassembly.md)）。
+- **WebAssembly / WASI**: 既定の `wasm32` ターゲットでは `Env` の関数に到達するビルドが `E2000` で拒否されます。`--wasm-host wasi` 指定時は WASI preview1 の `args_get` / `environ_get` にコンパイルされ、`Env.current_dir ()` は最初の preopen ディレクトリ名を返します（[WebAssembly](../../compiler/webassembly.md)）。WASI には OS の版と実行ファイルのパスを得る手段がないため、`Env.os_version ()` と `Env.executable_path ()` は `Os.Error { kind: Other, code: 52 }`（`ENOSYS`）を返します。
 
 ## 引数の順序
 
@@ -78,6 +103,8 @@ POSIX 環境では親プロセスが分割した `argv` 配列をそのまま受
 | `Env.args` | `own unit -> IO<Result<[string], Os.Error>>` | プログラム名を除いたコマンドライン引数配列を取得 |
 | `Env.var` | `own string -> IO<Result<Maybe<string>, Os.Error>>` | 環境変数の値を取得（未設定時は `Ok None`） |
 | `Env.current_dir` | `own unit -> IO<Result<string, Os.Error>>` | カレントディレクトリのパス文字列を取得 |
+| `Env.os_version` | `own unit -> IO<Result<string, Os.Error>>` | ホスト OS の版の文字列を取得 |
+| `Env.executable_path` | `own unit -> IO<Result<string, Os.Error>>` | 実行中のプロセスの実行ファイルの絶対パスを取得 |
 
 ## 関連項目
 

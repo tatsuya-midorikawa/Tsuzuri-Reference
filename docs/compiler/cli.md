@@ -222,6 +222,8 @@ tsuzuri build demo --target wasm32 -o demo/hello.wasm
 
 既定のターゲットは `native`、既定の出力種別（`--emit`）はネイティブで `exe`、WebAssembly（`wasm32` / `wasm64`）で `wasm` です。ネイティブ実行ファイル（`--emit exe`）では、`main` またはトップレベル式、`export def`、および `Drop` 実装から到達可能な関数のみがコード生成・リンクされます。そのため、未使用の公開関数だけが参照する未定義の `extern` シンボルや C ランタイムが実行ファイルのリンクを妨げることはありません。一方、`--emit object`・`llvm`・`header`・`shared`・`wasm` ではすべての公開関数が出力されます。
 
+macOS では `--emit app` で、実行ファイルを `Info.plist`・資源とともに `Name.app` に組み立て、ad-hoc で署名したアプリケーションバンドルを出力できます（`tsuzuri build demo --emit app -o out/Demo.app`。ルートの `Tsuzuri.toml` に `[macos] bundle_id` が必要。詳細は [macOS のアプリケーションバンドル](./macos-app-bundle.md) を参照）。
+
 開発中の `-O0` ビルド時間を短縮したい場合は `--backend fast`（`--features fast-backend` 付きでビルドされたコンパイラで利用可能）、実行時の分岐プロファイルに基づいて最適化したい場合は `--profile-generate DIR` と `--profile-use PATH`、バイナリサイズを抑えたい場合は `-Os` / `-Oz` や `--strip`・`--wasm-opt` を使用します（詳細は [コンパイラオプションと環境変数](./options.md) を参照）。
 
 ### `tsuzuri run`

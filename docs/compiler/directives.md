@@ -14,7 +14,7 @@ Tsuzuri 0.1.0 には、C/C++ の `#if`・`#ifdef`・`#define`・`#pragma` や F#
 
 - ソースコードのトークン列をコンパイル前に書き換えるマクロや条件付きコンパイル指令は存在しません。エディタ・LSP・フォーマッター・コンパイラは常に同一の構文木を扱います。
 - コンパイル時定数・オーバーフロー検査・CPU 命令セット別の多重実装・C 構造体レイアウトなどは、`@` で始まる**属性（アトリビュート）**や宣言キーワードとして構文の一部で記述します。
-- パッケージ構成・依存関係・リンク設定・権限ポリシー・ターゲット既定値は `Tsuzuri.toml` の全 7 セクション（`[package]`・`[dependencies]`・`[wasm]`・`[native]`・`[registry]`・`[capabilities]`・`[windows]`）で宣言的に管理します。
+- パッケージ構成・依存関係・リンク設定・権限ポリシー・ターゲット既定値は `Tsuzuri.toml` の全 8 セクション（`[package]`・`[dependencies]`・`[wasm]`・`[native]`・`[registry]`・`[capabilities]`・`[windows]`・`[macos]`）で宣言的に管理します。
 - 特定の警告コードだけをソース行単位で握り潰す `#nowarn` はありません。未使用束縛は `_` 接頭辞で明示し、CI 等で警告をエラー扱いにする場合は `--deny-warnings` を使用します。
 
 ## プリプロセッサを排した理由
@@ -91,7 +91,7 @@ Linux x64 ターゲットでは `sse4.2`・`avx2`・`avx512`、Linux Arm64 タ�
 
 ## `Tsuzuri.toml` によるプロジェクト設定
 
-ビルド設定のプロジェクト既定値や依存関係は、ルートの `Tsuzuri.toml` に記述します。パーサーは先頭の必須セクション `[package]` に続き、任意の `[dependencies]`・`[wasm]`・`[native]`・`[registry]`・`[capabilities]`・`[windows]` をそれぞれ高々 1 回受け付けます。未知のセクション・キーや重複セクションは `E0002` になります（`#` は TOML の行コメントです）。
+ビルド設定のプロジェクト既定値や依存関係は、ルートの `Tsuzuri.toml` に記述します。パーサーは先頭の必須セクション `[package]` に続き、任意の `[dependencies]`・`[wasm]`・`[native]`・`[registry]`・`[capabilities]`・`[windows]`・`[macos]` をそれぞれ高々 1 回受け付けます。未知のセクション・キーや重複セクションは `E0002` になります（`#` は TOML の行コメントです）。
 
 ```toml
 [package]
@@ -122,6 +122,10 @@ allow = ["ffi", "fs", "stdio"]
 
 [windows]
 subsystem = "console"
+
+[macos]
+min_version = "13.0"
+bundle_id = "dev.example.shop"
 ```
 
 | セクション | 指定可能なキー | 役割 |
@@ -133,6 +137,7 @@ subsystem = "console"
 | `[native]` | `link`、`libraries`、`search` | ネイティブ実行ファイル・共有ライブラリにリンクする相対オブジェクトパス、ライブラリ名、探索パス |
 | `[capabilities]` | `allow` | ルートパッケージが使用を許可する権限名の配列（9 種の権限語彙から指定。省略時は権限検査を行わない） |
 | `[windows]` | `subsystem` | Windows 実行ファイルの既定 PE サブシステム（`"console"` または `"windows"`。非 Windows ビルドでは無視） |
+| `[macos]` | `min_version`、`bundle_id`、`name`、`version`、`build`、`icon`、`resources`、`embed`、`info_plist`、`category`、`ui_element` | macOS 向けビルドの最低 OS 版（`"12.0"` 以降）と、アプリケーションバンドル（[`--emit app`](./macos-app-bundle.md)）の `Info.plist`・資源・埋め込みライブラリ（macOS 以外のビルドでは無視） |
 
 ## 警告の制御方法
 

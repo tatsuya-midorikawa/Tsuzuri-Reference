@@ -21,6 +21,7 @@ tsuzuri build . -g -O0 -o app
 
 - **Linux**: DWARF セクションが実行ファイル `app` に含まれるため、そのまま `lldb app` で起動できます。
 - **macOS**: `dsymutil` により `app.dwarf` が隣に生成されるため、実行前に `target symbols add` でシンボルを読み込みます。
+- **macOS のアプリケーションバンドル（`--emit app -g`）**: 平らな `.dwarf` の代わりに `Name.app.dSYM` がバンドルの隣に生成されます。UUID が実行ファイルと一致するので、`lldb Name.app` は `target symbols add` なしでシンボルを読み込みます（[macOS のアプリケーションバンドル](./macos-app-bundle.md)）。
 
 ```sh
 lldb \
