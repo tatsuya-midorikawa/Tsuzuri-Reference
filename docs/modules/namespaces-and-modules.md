@@ -157,15 +157,18 @@ Bench       BigInt      Cbor        Channel     Char        Complex
 Cond        Context     DataChannel Debug       Dir         Domain
 Dyn         Env         ErrGroup    Exception   File        FixedArray
 FnPtr       Format      Gen         Gpu         HashMap     HashSet
-IO          Int         Json        List        Map         Math
-Matrix      MatrixView  Maybe       Monoid      Monoids     Mutex
-Net         Once        OnceValue   Os          Owned       Parallel
-Path        Process     Random      Rc          ReceiveOnly Regex
-RegexText   Result      Routine     RwMutex     Semaphore   SendOnly
-Seq         Set         Simd        Slice       String      SyncMap
-Tensor      Test        Text        Ticker      Time        Timer
-Unicode     Utf8Char    Utf8String  Vec         WaitGroup   ZString
+IO          Int         Json        Linalg      List        Map
+Math        Matrix      MatrixView  Maybe       Monoid      Monoids
+Mutex       Net         ObjC        Once        OnceValue   Os
+Owned       Parallel    Path        Process     Random      Rc
+ReceiveOnly Regex       RegexText   Result      Routine     RwMutex
+Semaphore   SendOnly    Seq         Set         Simd        Slice
+String      SyncMap     Tensor      Test        Text        Ticker
+Time        Timer       Unicode     Utf8Char    Utf8String  Vec
+WaitGroup   ZString     ZUtf8String
 ```
+
+`ObjC`（Objective-C 連携）・`Routine`・`FnPtr` などは、ソースファイルを持たない組み込みのモジュールです。
 
 > 補足: 旧バージョンに存在した `Task` および `Async` は予約から外れており、ユーザー定義のモジュール名・型名・名前空間として自由に使用できます。
 

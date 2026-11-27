@@ -129,6 +129,8 @@ String.join :: ref string -> ref [string] -> string
 | コンパイラプロトコル | コンピュテーション式ビルダーの大文字メソッド（`Bind`, `Return`, `Combine`, `For` 等）、`derive` が呼ぶ `Json.decode_field`・`Json.case_index` | 脱糖規則・コード生成プロトコルで規定された順序（例: `Maybe.Bind maybe next`） | コンパイラが構文展開時に呼び出す内部規約であり、ユーザーがパイプラインで直接合成する API ではないため |
 | テスト・ベンチマークハーネス | [Gen](./testing/gen.md)（`for_all`, `for_all_cases`, `for_all_where`, `check`, `check_where`）、[Test](./testing/test.md)、[Bench](./testing/bench.md) | ジェネレータや設定が先、テスト本体の複数行ラムダが最後 | 戻り値を次の処理へ流す関数ではなく、末尾に複数行のクロージャブロックを置いて可読性を高めるため |
 
+組み込みのモジュール `ObjC`（[Objective-C 連携](../compiler/objective-c.md)）の関数はどれも 1 引数で、その引数が対象です。`extern class` のメンバーは利用者が宣言する `extern` であり標準ライブラリの API ではないので、この規約の対象外です。Objective-C のメソッド呼び出しと同じく受け手を最初の引数に置きます（`NSString.length (ref text)`）。
+
 なお、純粋なデータ変換モジュールに例外は一切認められません。また、[Net](./sys/net.md) や [Json](./encoding/json.md) のような例外・複合モジュール内に含まれる純粋関数（`Net.parse_ip`、`Json.serialize_pretty` など）は、原則どおり対象を最後の引数にとります。
 
 ## ユーザー定義関数への適用

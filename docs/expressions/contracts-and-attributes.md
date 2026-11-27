@@ -7,7 +7,7 @@ Tsuzuri は、関数の事前条件・事後条件をコードとして明記す
 - 関数の入口条件を `@requires 条件`、出口条件を `@ensures \r -> 条件`（入口時点のスナップショットは `@old (式)`）として関数本体の先頭に記述できます。
 - 契約は `--contracts` オプションの 4 モード（`off`・`check`・`test`・`prove`）で切り替えられ、`tsuzuri prove` による SMT 証明や `tsuzuri test --contracts test` による反例縮小付き自動テストにそのまま利用できます。
 - 契約は最適化の安全前提（未定義動作の仮定）としては一切使われず、`off` モードの生成コードは契約を書かない場合とバイト単位で一致します。
-- 宣言や式に付与できる属性は `@checked`、`@literal`、`@cpu`、`@no_alloc`、`@no_copy`、`@no_trap`、`@terminates`、`@trusted`、`@count`、`@c_layout`、`@json`、`@alias` の 12 個に厳密に限定されており、未知の属性やユーザー定義属性は `E0002` になります。
+- 宣言や式に付与できる属性は `@checked`、`@literal`、`@cpu`、`@no_alloc`、`@no_copy`、`@no_trap`、`@terminates`、`@trusted`、`@count`、`@c_layout`、`@returns_retained`、`@returns_not_retained`、`@json`、`@alias` の 14 個に厳密に限定されており、未知の属性やユーザー定義属性は `E0002` になります。
 - 非推奨 API の告知には属性ではなくドキュメントコメントの `/// @deprecated` タグ（`W1005`）を用います。また型変数制約行 `@'a : Eq` は属性とは別の構文です。
 
 ---
@@ -65,7 +65,8 @@ Tsuzuri で使用可能な全 12 属性と、同じく `@` で始まる関連記
 | `@no_copy` | トップレベル `def` の前 | 要素数に比例する暗黙のディープコピーを行わないことを静的に検証 | `E1031`, `E1032`, `W1008` |
 | `@no_trap` | トップレベル `def` の前 | ゼロ除算や未証明の添字アクセスなどの論理トラップがないことを静的に検証 | `E1031`, `E1032`, `W1008` |
 | `@terminates` | トップレベル `def` の前 | `while`・再帰・外部待機を含まず構造的に停止することを静的に検証 | `E1031`, `E1032`, `W1008` |
-| `@trusted` | `extern` 関数・`extern type` の前 | 外部宣言の契約を人間が確認した印と効果性質（`pure` 等）の付与 | `E1037`, `W1010` |
+| `@trusted` | `extern` 関数・`extern type`・`extern class`・`extern category` の前 | 外部宣言の契約を人間が確認した印と効果性質（`pure` 等。関数だけ）の付与 | `E1037`, `W1010` |
+| `@returns_retained`・`@returns_not_retained` | `extern` 関数・`extern class` のメンバーの前 | Objective-C の物体の結果を +1（所有を受け取る）・+0（受け取った後に retain する）として扱う | `E0002`, `E1008` |
 | `@count(pos, ty)` | `extern` 関数の前 | バッファ引数に付随して C 側へ渡す長さ引数の整数型（または `none`）を指定 | `E0002`, `E1008` |
 | `@c_layout` | `record` 宣言の前 | フィールドを宣言順・C 標準アライメント（または `pack = N`）で配置 | `E0002`, `E1008` |
 | `@json "name"` | `record` フィールド・`union` ケースの前 | `deriving (Encode, Decode)` が入出力する JSON キー名・タグ名を変更 | `E0002`, `E1025` |
@@ -181,6 +182,7 @@ extern "crc32_buf" def c_crc32 :: ref [i8u] -> i32u
 ```
 
 - **`@trusted [性質...]`**: `extern` 関数または `extern type` の直前に置き、C 側の実装契約を人間が監査済みであることを記録します（未付与の `extern` は `--warn untrusted-extern` や `tsuzuri audit` で `W1010` の対象になります）。同じ行に `pure`・`no_alloc`・`no_copy`・`no_trap`・`terminates` を列挙すると、対応する `pure def` や効果表明付き関数からの呼び出しが許可されます（配置や性質名の誤りは `E1037`）。
+- **`@returns_retained`・`@returns_not_retained`**: Objective-C の物体を返す `extern` 関数、または `extern class`・`extern category` のメンバーの直前に置き、結果の所有を指定します。`@returns_retained` は呼び出し側が所有を受け取る +1 の結果（C の `NS_RETURNS_RETAINED`）、`@returns_not_retained` は受け取った直後に retain する +0 の結果です（`extern` 関数の既定は +0、メンバーの既定は Cocoa の族の規則）。両方を書くか 2 度書くと `E0002`（`returns_retained_conflict`）、ほかの宣言の前は `E0002`（`misplaced_returns_retained_attribute`）、結果が物体でないと `E1008`（`objc_returns_retained_not_object`）です（[Objective-C 連携](../compiler/objective-c.md)）。
 - **`@count(位置, 型)`**: `extern` 関数の 1 始まり引数位置にあるバッファ引数（`ref [T]`、`ref mut [T..]`、`ref string`、`ref utf8string`）に対し、C 関数へ渡す要素数引数の型を `i32`・`i32u`・`i64`（既定）・`i64u`、または省略の `none` から指定します（誤りは `E1008` / `E0002`）。
 - **`@c_layout` / `@c_layout(pack = N)`**: `record` 宣言の直前に置き、フィールドを宣言順かつ C 標準アライメント（`pack = N` では `1`・`2`・`4`・`8`・`16` バイト上限）で配置します。`string` や `bool`、型パラメータを含むレコードには指定できません（`E1008`）。
 

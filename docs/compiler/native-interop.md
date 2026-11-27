@@ -7,6 +7,7 @@ Tsuzuri はガベージコレクタや重量級ランタイムへの依存なし
 - `--emit header` と `--emit object` を対で出力することで、C / C++ ホストから型安全なプロトタイプ宣言で Tsuzuri の関数をリンク・呼び出しできます。複数の Tsuzuri ライブラリのヘッダーを 1 つの翻訳単位で同時に `#include` することも可能です。
 - 公開 ABI はスカラー数値・`bool`・`unit` 戻り値・借用スライス・所有バッファ・文字列・スカラーレコード・`@c_layout` 構造体・不透明ハンドル（`extern type`）・静的コールバックをサポートします。ホストへ返却された所有バッファは `tsuzuri_free` で 1 回だけ解放します。
 - `extern type` にはムーブ専用の所有ハンドル、`copy`（非所有識別子）、`local`（OS スレッド拘束ハンドル）の 3 種があり、ネイティブでは `Maybe<Handle>` のゼロコスト NULL ニッチ表現や `ref mut`・`@count`・`ZString`・`extern view` を利用できます。
+- macOS では Objective-C のクラスを `extern class` で型として宣言し、メソッドを型付きで呼び出せます（[Objective-C 連携](./objective-c.md)）。
 - `tsuzuri bindgen` は Clang AST から ABI が厳密に一致する C 宣言のみを抽出し、不一致な宣言は推測せず `W2002` と `// skipped` コメントで明示します。
 - `--emit shared` で `.dylib` / `.so` を生成し、`--emit bindings-cs`・`bindings-py`・`bindings-cpp` で C#（.NET 8 `LibraryImport`）・Python（`ctypes`）・C++20 の RAII バインディングを出力できます。
 
@@ -118,6 +119,8 @@ def helper :: i64 -> i64 = \x -> unused_ext x
 | `extern type copy Hwnd` | `Copy`・`Capture`・`Send`・`Sync` | Win32 の `HWND` やストックオブジェクトなど、呼び出し側が所有権を持たない識別子ハンドル |
 | `extern type local Hdc` | 非 Copy・非 `Capture`・非 `Send`・非 `Sync`（`pinned` 効果を誘導） | Win32 `HDC`、OpenGL コンテキスト、COM STA ポインタなど、取得した OS スレッド以外から触れてはならないスレッド拘束ハンドル |
 
+Objective-C の物体（`id`）は、不透明ハンドルの代わりに `extern class` で宣言します。値が強い参照を所有し、drop で release されます（[Objective-C 連携](./objective-c.md)）。
+
 `local` ハンドルを直接または間接に扱う関数にはコンパイラが自動的に `pinned` 効果を推論し、`tzroutine { ... }` や `Parallel.*` での別スレッド起動および一般クロージャへの格納を `E1013` で静的に禁止します（`Routine.with_locked_thread` や同期ロックヘルパー `Mutex.with_lock` 等には渡せます）。
 
 ネイティブターゲットでは、非 `Maybe` の `H` および `ref H` は常に非 Null ポインタであることが境界で検査され、`NULL` が渡されると即座に `null extern handle` トラップとなります。`NULL` を取り得る引数や戻り値には **`Maybe<H>`・`Maybe<ref H>`・`Maybe<ref Record>`** を使用します。これらはタグを持たない 1 ポインタ（8 バイト、`None` = `NULL`、`Some` = 非 `NULL`）にゼロコストで表現されます。
@@ -148,6 +151,37 @@ width (ref rect)
 
 - フィールドには固定幅数値型（`bool` は C の `_Bool` と Win32 `BOOL` の幅差による事故を防ぐため不可、`i8u` や `i32` を使用）、固定長数値配列 `[T; N]`、入れ子の `@c_layout` レコード、`extern type copy` ハンドル、`Maybe<Handle>`、`FnPtr<F>`、`ref ZString` / `Maybe<ref ZString>`（入力専用）を配置できます。生成される `.h` にはサイズと全フィールドオフセットを検証する `_Static_assert` が出力されます。
 - ホストが所有する構造体アドレス（`i64`）を C ラッパーなしで直接読み書きしたい場合は、`extern view def read_rect :: i64 -> NativeRect` および `extern view def write_rect :: i64 -> ref NativeRect -> unit` を宣言します（NULL およびアライメント違反は実行時トラップで安全に検査され、パディングバイトは保護されます）。
+
+#### 構造体の値渡しと値返し
+
+`@c_layout` レコード `R` を `ref` なしで `extern def` の引数に書くと C の構造体の値渡し（C の `T`）、結果に書くと値返しになります。`ref R` は `const T *`、`ref mut R` は `T *` です。`@c_layout` のないレコードは、`ref` の有無によらず正規化した一時構造体へのポインターのままです。`export def` とコールバックは `@c_layout` のレコードもポインターで受け渡します。
+
+```tsuzuri
+@c_layout
+record Rect { left: i32, top: i32, right: i32, bottom: i32 }
+
+@c_layout
+record Point { x: i32, y: i32 }
+
+// BOOL PtInRect(const RECT *lprc, POINT pt);
+@trusted
+extern "PtInRect" def pt_in_rect :: ref Rect -> Point -> i32
+```
+
+コンパイラはターゲットごとに C コンパイラ（Clang）と同じ分類を行います。
+
+| ターゲット | 引数 | 結果 |
+| --- | --- | --- |
+| Windows x64（MSVC・MinGW） | 大きさが 1・2・4・8 バイトなら整数レジスター 1 つ（`{ f32, f32 }` も整数レジスター）。ほかは複写へのポインター | 同じ大きさなら整数レジスター。ほかは先頭の隠れた引数 |
+| AArch64（Windows・Linux・macOS） | 同じ浮動小数点型のフィールド 1〜4 個からなる構造体（HFA）は浮動小数点レジスター。ほかは 16 バイト以下なら整数レジスター、それより大きければ複写へのポインター | HFA は浮動小数点レジスター。ほかは 16 バイト以下なら整数レジスター、大きければ呼び出し側が渡す領域 |
+| System V x86-64（Linux） | 16 バイト以下で各フィールドが自然な整列にある構造体は 8 バイトごとに整数レジスターか SSE レジスター。ほかはスタック上の複写 | 同じ分類で `rax`・`rdx`・`xmm0`・`xmm1`。ほかは先頭の隠れた引数 |
+
+- 引数は左から右へ評価され、メモリーで渡す構造体は呼び出しごと・引数ごとの新しい複写です。呼び出し先が書き換えても Tsuzuri の値は変わりません。
+- `FnPtr` や `ref ZString` のフィールドを持つ `@c_layout` レコードは入力専用で、結果にすると `E1008` です。
+- WebAssembly で到達した値渡しは `E1008`（`abi_native_only`）です（`ref R` は WebAssembly でも使えます）。x86-64 と AArch64 以外のターゲットは `E1008`（`abi_record_by_value_target`）です。`tsuzuri check` はターゲットを知らないので受け付け、誤りは `build` で報告されます。
+- リンク名のない `extern def` の C ヘッダーのプロトタイプは、値渡しを `tz_record_… f(tz_record_… arg0)` の形で出力します。
+- 宣言が C 側の構造体と一致することは、ほかの `extern` と同じく宣言を書く人の責任です。可変長引数の関数と、16 バイト以上の整列を持つ構造体は扱いません。
+- **互換性**: 以前の版は `ref` のない `@c_layout` レコードも `const T *`（結果は先頭の out 引数）で受け渡していました。ポインターを取る C の関数の宣言は、引数を `ref R` に、out 引数を `ref mut R` に書き直します（[安定性と互換性ポリシー](./stability.md#c-abi-の既知の変更)）。
 
 ### `@trusted` とリンク入力
 
@@ -230,6 +264,7 @@ clang -O3 -flto=thin host.c add.bc -o host
 - [コンパイラオプションと環境変数](./options.md)
 - [対応プラットフォームとクロスコンパイル](./platforms.md)
 - [WebAssembly 出力](./webassembly.md)
+- [Objective-C 連携（`extern class` と `ObjC`）](./objective-c.md)
 - [契約と属性](../expressions/contracts-and-attributes.md)
 - [tzroutine による軽量並行処理](../concurrency/tzroutine.md)
 - [FnPtr](../stdlib/memory/fnptr.md)
