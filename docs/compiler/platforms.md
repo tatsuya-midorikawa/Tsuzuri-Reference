@@ -106,12 +106,14 @@ TSUZURI_RUNNER="qemu-aarch64 -L /usr/aarch64-linux-gnu" \
 言語仕様上の意味は不変ですが、ターゲットに応じて以下の低レベル表現が切り替わります。
 
 - **シンボル可視性と ABI**: Windows ターゲットでは `export def` に `dllexport` が付与され、C 構造体や呼び出し規約も対象 OS（System V AMD64 / AAPCS64 / Windows x64 / Windows Arm64）に従います。
+- **構造体の値渡し（`@c_layout`）**: `extern def` の `ref` のない `@c_layout` レコードは、9 種のネイティブターゲットすべてで C の ABI どおりに受け渡します（Windows x64 は大きさで整数レジスターか複写へのポインター、AArch64 は HFA・整数レジスター・`x8`、System V x86-64 は 8 バイトごとの分類）。`wasm32`・`wasm64` では `E1008`（`abi_native_only`）です。
 - **`@cpu` マルチバージョニング**: Linux x64 では `sse4.2`・`avx2`・`avx512`、Linux Arm64 では `sve`・`sve2` の各バリアントを生成し、それ以外のターゲットでは基準のポータブル実装のみを生成します。
 - **`Math.fma`（融合積和演算）**: Arm64 ネイティブではハードウェア FMA 命令に下げ、x64 ネイティブおよび WebAssembly では単一丸めを厳密に満たすソフトウェアルーチンを呼び出します（得られるビット列は全環境で同一です）。
 - **`--cpu native` の制約**: ビルド機自身の CPU 命令セットを検出して特化するオプションであるため、クロスコンパイル時（ホストと異なる `--target TRIPLE` 指定時）に併用すると `E2000` になります。クロスコンパイル時は既定の `--cpu generic` を使用します。
 
 ## 現時点のプラットフォーム別制限事項
 
+- **Objective-C 連携は Apple のターゲットだけ**: `extern class`・`ObjC`・メッセージ送信（[Objective-C 連携](./objective-c.md)）は、宣言と `tsuzuri check` はどのホストでも通りますが、`build` で到達すると Apple でないネイティブのターゲットでは `E1008`（`abi_apple_only`）、WebAssembly では `E1008`（`abi_native_only`）になります。
 - **Windows ターゲットの未対応出力**: `--emit shared`（DLL 直接出力）、`--emit bitcode`（ThinLTO ビットコード出力）、プロファイル誘導最適化（`--profile-generate` / `--profile-use`）、高速デバッグバックエンド（`--backend fast`）、常駐ビルドサーバー（`tsuzuri serve`）、および純粋計算トラップ隔離領域 `Domain.run` は現在 macOS / Linux のみ対応しており、Windows では `E2000`（`Domain.run` は `E1038`）となります。
 - **ランタイム埋め込みオブジェクトの制限**: Windows COFF の `--emit object` で tzroutine・OS API・標準入出力・`Net` などの C ランタイムを含むオブジェクトを生成しようとした場合、および同梱ツールチェーンで C ランタイムを含む Mach-O の `--emit object` を生成しようとした場合は `E2002` となります（実行ファイル `--emit exe` の直接リンク、または C ランタイム不要の純粋計算オブジェクトは問題なく生成できます）。
 - **Windows のトラップ出力先**: Windows の `--trap-info` 報告は CRT のファイル記述子 2 ではなく Win32 の `STD_ERROR_HANDLE` へ直接書き込まれ、ハンドルが無効な場合はデバッガー向けの `OutputDebugStringW` へ送出されます。

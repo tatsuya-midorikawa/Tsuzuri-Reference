@@ -143,6 +143,7 @@ tsuzuri build cli-app --target wasm32 --wasm-host wasi -o cli-app.wasm
 ## ホスト関数のインポートと診断サイドテーブル
 
 - **`extern` の import 名規約**: リンク名なしの `extern def tax_rate :: unit -> i64` はモジュール `"tsuzuri"`・名前 `"Main.tax_rate"`、1 文字列の `extern "sqrt" def ...` はモジュール `"tsuzuri"`・名前 `"sqrt"`、2 文字列の `extern "env" "host_now" def ...` はモジュール `"env"`・名前 `"host_now"` として import されます。
+- **ネイティブ専用の連携は到達すると `E1008`**: Objective-C のクラス・`ObjC`・メッセージ送信（[Objective-C 連携](./objective-c.md)）と、`@c_layout` レコードの C 構造体としての値渡しは、WebAssembly のビルドで到達すると `E1008`（`abi_native_only`）になります。宣言だけなら出力は変わりません。
 - **`.trap.json` と `.overflow.json`**: `--trap-info` 指定時は `tsuzuri_trap_site` グローバル/関数と `<output>.trap.json` が生成され、`--overflow-report` 指定時は外部 import を増やさずに `tsuzuri_overflow_count()`・`tsuzuri_overflow_hit(i)` の 2 関数と `<output>.overflow.json` が生成されます。
 
 ## 関連項目

@@ -21,6 +21,7 @@
 | 所有権エラーや借用の競合・ライフタイムを解決したい | [所有権とムーブ](./ownership/ownership-and-move.md)・[借用と参照](./ownership/borrowing.md)・[ライフタイムとリージョン](./ownership/lifetimes.md) |
 | パイプライン `\|>` に合わせた標準ライブラリの引数順を確認したい | [標準ライブラリの設計規約と引数順序](./stdlib/conventions.md) |
 | C / C++ / C# / Python や WebAssembly（JS / TS）と連携したい | [ネイティブ連携と C ABI](./compiler/native-interop.md)・[WebAssembly 出力](./compiler/webassembly.md) |
+| macOS で AppKit・Foundation などの Objective-C の API を呼びたい | [Objective-C 連携（`extern class` と `ObjC`）](./compiler/objective-c.md) |
 | 並行処理・チャネル通信・データ並列計算を書きたい | [tzroutine による軽量並行処理](./concurrency/tzroutine.md)・[select 式](./concurrency/select.md)・[Parallel](./stdlib/sync/parallel.md) |
 | AI エージェント（MCP・知識グラフ・ガイド）と連携したい | [MCP サーバー](./compiler/mcp.md)・[知識グラフ](./compiler/knowledge-graph.md)・[図表の自動生成](./compiler/diagrams.md) |
 
@@ -198,6 +199,7 @@
 - [診断メッセージとエラーコード](./compiler/diagnostics.md) — テキスト/JSON Lines/LSP の診断形式、全 73 エラー・警告コード解説、全 `kind` カタログ
 - [デバッグ](./compiler/debugging.md) — DWARF / CodeView PDB 生成、LLDB 型フォーマッター、natvis、個別テストデバッグ、トラップバックトレース
 - [ネイティブ連携と C ABI](./compiler/native-interop.md) — `export` / `extern`、`extern type`、`@c_layout`、`tsuzuri bindgen`、`--emit shared`、C# / Python / C++ バインディング、ThinLTO
+- [Objective-C 連携（`extern class` と `ObjC`）](./compiler/objective-c.md) — macOS で Objective-C のクラスを型として宣言し、Cocoa のメソッドを型付きで呼び出す（所有・`Self`・構造体の値渡し・定数の NSString）
 - [WebAssembly 出力](./compiler/webassembly.md) — `wasm32` / `wasm64`、`--emit bindings-js`、`simd128`・`threads`・`tail-call`・`jspi`・`webgpu`・`net`、WASI
 - [知識グラフ](./compiler/knowledge-graph.md) — `target/tz/kg/` の自動生成、要約カード、`tsuzuri kg` によるシンボル照会・型検索・影響分析（`impact`）
 - [知識グラフのデータ形式](./compiler/knowledge-graph-format.md) — ノード・エッジ・事実・メモリレイアウト JSON Lines（`tz-kg/1` / `tz-facts/1`）の厳密スキーマ仕様

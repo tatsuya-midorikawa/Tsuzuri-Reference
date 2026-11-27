@@ -1,13 +1,13 @@
 # 契約と属性
 
-Tsuzuri は、関数の事前条件・事後条件をコードとして明記する**契約（`@requires`・`@ensures`）**と、定数化・オーバーフロー検査・CPU 命令セット振り分け・静的効果検証・FFI メモリ配置などをコンパイラに指示する **12 種類の組み込み属性**を提供します。契約と効果表明は、実行時検査・プロパティベーステスト・SMT ソルバーによる形式証明まで一貫した仕組みで統合されています。
+Tsuzuri は、関数の事前条件・事後条件をコードとして明記する**契約（`@requires`・`@ensures`）**と、定数化・オーバーフロー検査・CPU 命令セット振り分け・静的効果検証・FFI メモリ配置などをコンパイラに指示する **16 個の組み込み属性**を提供します。契約と効果表明は、実行時検査・プロパティベーステスト・SMT ソルバーによる形式証明まで一貫した仕組みで統合されています。
 
 ## 要点
 
 - 関数の入口条件を `@requires 条件`、出口条件を `@ensures \r -> 条件`（入口時点のスナップショットは `@old (式)`）として関数本体の先頭に記述できます。
 - 契約は `--contracts` オプションの 4 モード（`off`・`check`・`test`・`prove`）で切り替えられ、`tsuzuri prove` による SMT 証明や `tsuzuri test --contracts test` による反例縮小付き自動テストにそのまま利用できます。
 - 契約は最適化の安全前提（未定義動作の仮定）としては一切使われず、`off` モードの生成コードは契約を書かない場合とバイト単位で一致します。
-- 宣言や式に付与できる属性は `@checked`、`@literal`、`@cpu`、`@no_alloc`、`@no_copy`、`@no_trap`、`@terminates`、`@trusted`、`@count`、`@c_layout`、`@json`、`@alias` の 12 個に厳密に限定されており、未知の属性やユーザー定義属性は `E0002` になります。
+- 宣言や式に付与できる属性は `@checked`、`@literal`、`@cpu`、`@no_alloc`、`@no_copy`、`@no_trap`、`@terminates`、`@trusted`、`@count`、`@c_layout`、`@link`、`@weak`、`@returns_retained`、`@returns_not_retained`、`@json`、`@alias` の 16 個に厳密に限定されており、未知の属性やユーザー定義属性は `E0002` になります。
 - 非推奨 API の告知には属性ではなくドキュメントコメントの `/// @deprecated` タグ（`W1005`）を用います。また型変数制約行 `@'a : Eq` は属性とは別の構文です。
 
 ---
@@ -52,9 +52,9 @@ clamp 0 8 20
 
 ## 属性リファレンス一覧
 
-Tsuzuri で使用可能な全 12 属性と、同じく `@` で始まる関連記法の一覧です。
+Tsuzuri で使用可能な全 16 属性と、同じく `@` で始まる関連記法の一覧です。
 
-### 組み込み属性（全 12 種）
+### 組み込み属性（全 16 個）
 
 | 属性 | 配置位置 | 役割と効果 | 主な関連診断 |
 | --- | --- | --- | --- |
@@ -65,7 +65,10 @@ Tsuzuri で使用可能な全 12 属性と、同じく `@` で始まる関連記
 | `@no_copy` | トップレベル `def` の前 | 要素数に比例する暗黙のディープコピーを行わないことを静的に検証 | `E1031`, `E1032`, `W1008` |
 | `@no_trap` | トップレベル `def` の前 | ゼロ除算や未証明の添字アクセスなどの論理トラップがないことを静的に検証 | `E1031`, `E1032`, `W1008` |
 | `@terminates` | トップレベル `def` の前 | `while`・再帰・外部待機を含まず構造的に停止することを静的に検証 | `E1031`, `E1032`, `W1008` |
-| `@trusted` | `extern` 関数・`extern type` の前 | 外部宣言の契約を人間が確認した印と効果性質（`pure` 等）の付与 | `E1037`, `W1010` |
+| `@trusted` | `extern` 関数・`extern type`・`extern class`・`extern category` の前 | 外部宣言の契約を人間が確認した印と効果性質（`pure` 等。関数だけ）の付与 | `E1037`, `W1010` |
+| `@link("name")`・`@link(framework = "name")` | 明示のリンク名を持つ `extern` 関数・C データシンボルの前 | そのシンボルに到達したネイティブのリンクへ、`@link("name")` は `-l<name>` を（macOS でも同じ）、`@link(framework = "name")` は macOS の `-framework <name>` を追加 | `E0002`, `E2000` |
+| `@weak` | 明示のリンク名を持つ `extern` 関数、C データシンボル、`extern class`（実行時名の文字列は省略可）の前（Apple ターゲット） | Mach-O の weak import にし、実行環境にシンボルがなければ使用の時点で検査 | `E0002`, `E1008`, `E1037` |
+| `@returns_retained`・`@returns_not_retained` | `extern` 関数・`extern class` のメンバーの前 | Objective-C の物体の結果を +1（所有を受け取る）・+0（受け取った後に retain する）として扱う | `E0002`, `E1008` |
 | `@count(pos, ty)` | `extern` 関数の前 | バッファ引数に付随して C 側へ渡す長さ引数の整数型（または `none`）を指定 | `E0002`, `E1008` |
 | `@c_layout` | `record` 宣言の前 | フィールドを宣言順・C 標準アライメント（または `pack = N`）で配置 | `E0002`, `E1008` |
 | `@json "name"` | `record` フィールド・`union` ケースの前 | `deriving (Encode, Decode)` が入出力する JSON キー名・タグ名を変更 | `E0002`, `E1025` |
@@ -167,9 +170,9 @@ rolling_hash [1, 2, 3]
 
 ## FFI・レイアウト・JSON・ビルダー別名属性
 
-### @trusted・@count・@c_layout（ネイティブ連携）
+### @trusted・@count・@c_layout・@link・@weak（ネイティブ連携）
 
-C ABI やホスト環境との相互運用では、以下の 3 属性を組み合わせて安全性とメモリ配置を制御します（詳細は[ネイティブ相互運用](../compiler/native-interop.md)を参照）。
+C ABI やホスト環境との相互運用では、以下の属性を組み合わせて安全性とメモリ配置を制御します（詳細は[ネイティブ相互運用](../compiler/native-interop.md)を参照）。
 
 ```tsuzuri
 @c_layout(pack = 1)
@@ -181,6 +184,9 @@ extern "crc32_buf" def c_crc32 :: ref [i8u] -> i32u
 ```
 
 - **`@trusted [性質...]`**: `extern` 関数または `extern type` の直前に置き、C 側の実装契約を人間が監査済みであることを記録します（未付与の `extern` は `--warn untrusted-extern` や `tsuzuri audit` で `W1010` の対象になります）。同じ行に `pure`・`no_alloc`・`no_copy`・`no_trap`・`terminates` を列挙すると、対応する `pure def` や効果表明付き関数からの呼び出しが許可されます（配置や性質名の誤りは `E1037`）。
+- **`@link("名前")` / `@link(framework = "名前")`**: 明示のリンク名を持つ `extern "symbol" def` または C データシンボル（`extern "symbol" view def`）の直前に 1 つ置きます。そのシンボルが最終の出力に到達したときだけ、Tsuzuri が行うネイティブのリンクに、`@link("名前")` は `-l<名前>` を（macOS でも同じ）、`@link(framework = "名前")` は macOS の `-framework <名前>` を追加します。`-l`・`--framework` と重なる名前は 1 つにまとまります。書式の誤りは `E0002`（`link_attribute_syntax`）、ほかの宣言の前は `E0002`（`misplaced_link_attribute`）、`framework` の形に macOS 以外のネイティブターゲットで到達すると `E2000`（`link_framework_target`）、WebAssembly のビルドで到達すると `E2000`（`link_attribute_wasm`）です。
+- **`@weak`**: Apple ターゲット（macOS Arm64）で、明示のリンク名を持つ `extern "symbol" def`、`Maybe` を返す C データシンボル、`extern class` の直前に置き、シンボルを Mach-O の weak import にします。`extern class` は実行時名の文字列を省略でき、そのときは型名がクラスの名前です。実行環境にシンボルがないとき、関数の呼び出しとクラスの参照は `the weak symbol '<sym>' is not available on this system` を報告してトラップし、データシンボルの読み出しは `None` を返します。引数を書くと `E0002`（`weak_attribute_syntax`）、ほかの宣言の前は `E0002`（`misplaced_weak_attribute`）、リンク名のない `extern` 関数は `E1008`（`weak_needs_symbol`）、`Maybe` を返さないデータシンボルは `E1008`（`weak_data_symbol_result`）、`@trusted no_trap` との併用は `E1037`（`trusted_no_trap_weak`）です。Apple 以外のネイティブターゲットで到達すると `E1008`（`abi_apple_only`）、WebAssembly では `E1008`（`abi_native_only`）です（[Objective-C 連携](../compiler/objective-c.md)）。
+- **`@returns_retained`・`@returns_not_retained`**: Objective-C の物体を返す `extern` 関数、または `extern class`・`extern category` のメンバーの直前に置き、結果の所有を指定します。`@returns_retained` は呼び出し側が所有を受け取る +1 の結果（C の `NS_RETURNS_RETAINED`）、`@returns_not_retained` は受け取った直後に retain する +0 の結果です（`extern` 関数の既定は +0、メンバーの既定は Cocoa の族の規則）。両方を書くか 2 度書くと `E0002`（`returns_retained_conflict`）、ほかの宣言の前は `E0002`（`misplaced_returns_retained_attribute`）、結果が物体でないと `E1008`（`objc_returns_retained_not_object`）です（[Objective-C 連携](../compiler/objective-c.md)）。
 - **`@count(位置, 型)`**: `extern` 関数の 1 始まり引数位置にあるバッファ引数（`ref [T]`、`ref mut [T..]`、`ref string`、`ref utf8string`）に対し、C 関数へ渡す要素数引数の型を `i32`・`i32u`・`i64`（既定）・`i64u`、または省略の `none` から指定します（誤りは `E1008` / `E0002`）。
 - **`@c_layout` / `@c_layout(pack = N)`**: `record` 宣言の直前に置き、フィールドを宣言順かつ C 標準アライメント（`pack = N` では `1`・`2`・`4`・`8`・`16` バイト上限）で配置します。`string` や `bool`、型パラメータを含むレコードには指定できません（`E1008`）。
 
