@@ -128,7 +128,7 @@ def describe :: unit -> string = \() ->
 | `@c_layout` のレコード `R` | 構造体の値 | `NSPoint`・`NSSize`・`NSRect`・`NSRange` など |
 | ハンドル、`ref R`・`ref mut R`、バッファ、コールバック、`FnPtr` | `extern def` と同じ | [ネイティブ連携と C ABI](./native-interop.md) |
 
-`@c_layout` のないレコードの値、バッファとレコードの結果は `E1008`（`objc_member_type`）です。構造体は次のように宣言して値で受け渡します。
+`@c_layout` のないレコードの値（引数と結果）とバッファの結果は `E1008`（`objc_member_type`）です。`@c_layout` のレコードは、引数にも結果にも値で書けます。構造体は次のように宣言して値で受け渡します。
 
 ```tsuzuri
 @c_layout
@@ -184,7 +184,7 @@ C の関数にも物体を受け渡せます。
 | 結果 | `C`・`Maybe<C>` | +0 として受け取り、直後に retain します。`@returns_retained` を付けると +1 として受け取ります |
 | 引数・結果・静的コールバックの引数 | `ObjC.Class`・`ObjC.Sel` | 所有なし |
 
-`export def`、`@c_layout` のフィールド、`FnPtr<F>`、コールバックの物体、`extern view`、`ref mut`、バッファの要素には Objective-C の型を置けません（`E1008` `objc_object_position`）。物体を保持する C の大域変数は `extern "sym" view def f :: unit -> Maybe<C>` で読めます（読んだ値は retain されます）。
+`export def`、`@c_layout` のフィールド、`FnPtr<F>`、コールバックの物体、アドレスを受け取る `extern view`（`i64 -> T` のメモリービュー）、`ref mut`、バッファの要素には Objective-C の型を置けません（`E1008` `objc_object_position`）。名前付きのデータシンボルを読む `extern view` は別で、物体を保持する C の大域変数を `extern "sym" view def f :: unit -> C`（または `Maybe<C>`）で読めます（読んだ値は retain されます）。
 
 ## ターゲット・リンク・監査
 
