@@ -258,6 +258,7 @@ clang -O3 -flto=thin host.c add.bc -o host
 
 - **`--allocator host`**: ヒープ確保をホスト定義の `void *tsuzuri_host_alloc(uint64_t size, uint64_t align)`・`tsuzuri_host_free`・`tsuzuri_host_realloc`（`align` は常に `16`、先頭 16 バイトは内部サイズヘッダー）へ委譲します。複数の tzroutine や `Parallel.*` スレッドから同時に呼ばれ得るため、ホスト側でスレッドセーフに実装し、ホストへ返った所有バッファの解放には引き続き `tsuzuri_free` を使用してください。
 - **イベントループとブロッキング呼び出し**: `export def` の呼び出しは内部で起動したすべての tzroutine が完了するまでホストへ戻りません。GUI の UI スレッドやイベントループをブロックしたくない場合は、ホスト側のワーカースレッドから `tz_*` を呼び出します。また、tzroutine 内から `extern` を呼ぶとスケジューラは自動的に論理プロセッサ `P` を他スレッドへ譲渡可能にし、コールバックで再入した際は元の OS スレッド上で継続します。
+- **報告の出力先**: `--emit object` や `--emit shared` の出力を組み込んだホストでは、tzroutine ランタイムなどの報告はホストの標準エラーへ書かれ、標準エラーの行き先はホストが決めます。macOS の実行ファイルが行う unified logging への送信（[Finder から起動したアプリの報告](./debugging.md#finder-から起動したアプリの報告)）は、object と共有ライブラリでは行いません。
 
 ## 関連項目
 
