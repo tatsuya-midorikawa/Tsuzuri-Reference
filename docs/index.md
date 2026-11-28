@@ -137,6 +137,7 @@
 - [Matrix](./stdlib/numeric/matrix.md) — 行優先連続バッファを持つ 2 次元行列 `Matrix<'a>` の生成・変換・決定的行列積
 - [MatrixView](./stdlib/numeric/matrix-view.md) — コピーなしで部分行列・行・列・転置を参照または排他更新するビュー
 - [Tensor](./stdlib/numeric/tensor.md) — 任意次元配列 `Tensor<'a>` のブロードキャスト演算・軸操作・ビュー・インプレースカーネル
+- [RandomTensor](./stdlib/numeric/random-tensor.md) — 乱数のテンソル生成（16 の分布）、ディリクレ分布・多変量正規分布、並べ替えと重み付き抽出（opt-in）
 - [Simd](./stdlib/numeric/simd.md) — 128-bit / 256-bit 固定幅 SIMD ベクトル型のロード・ストア・レーン演算・水平リダクション
 - [Gpu](./stdlib/numeric/gpu.md) — WebGPU / Vulkan コンピュートカーネルのデバイス要求とデータ並列ディスパッチ（実験的）
 
@@ -177,7 +178,7 @@
 - [Os](./stdlib/sys/os.md) — OS 種別・アーキテクチャ判定および統一システムエラー型 `Os.Error`
 - [Process](./stdlib/sys/process.md) — 外部プロセスの起動、引数・環境変数・標準入出力パイプの制御と終了ステータス取得
 - [Time](./stdlib/sys/time.md) — 単調増加クロック、UTC システム時刻、時間単位定数、`tzroutine` 対応スリープ
-- [Random](./stdlib/sys/random.md) — OS 暗号論的乱数取得と、シード再現性を持つ純粋擬似乱数生成器 `Random.Pcg`
+- [Random](./stdlib/sys/random.md) — OS 暗号論的乱数取得と、シード再現性を持つ純粋擬似乱数生成器 `Random.Pcg`・`Random.Pcg64`（種の列 `SeedSequence`、独立なストリームの分岐、15 の確率分布）
 - [Net](./stdlib/sys/net.md) — IPv4 / IPv6 アドレス解析、DNS 名前解決、ノンブロッキング netpoller 統合の TCP / UDP ソケット
 
 ### データシリアライズ (`docs/stdlib/encoding/`)

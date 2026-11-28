@@ -372,6 +372,7 @@ $"out={scratch}"
 - [MatrixView](matrix-view.md)
 - [Math](math.md)
 - [Complex](complex.md)
+- [RandomTensor](random-tensor.md)
 - [型クラス](../../types/type-classes.md)
 - [借用と参照](../../ownership/borrowing.md)
 - [標準ライブラリの設計規約](../conventions.md)

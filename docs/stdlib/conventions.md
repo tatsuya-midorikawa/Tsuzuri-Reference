@@ -21,7 +21,7 @@ Tsuzuri の標準ライブラリとコンパイラ組み込み関数は、モジ
 | 選択・結果・作用 | [Maybe](./core/maybe.md), [Result](./core/result.md), [IO](./sys/io.md) | `Maybe`、`Result`、`IO` アクション | `Maybe.bind f opt`, `Result.map_error f res`, `IO.bind f act` |
 | 文字列・正規表現 | [String](./text/string.md), [Utf8String](./text/utf8string.md), [Text](./text/text.md), [Format](./text/format.md), [Unicode](./text/unicode.md), [Regex](./text/regex.md), [Path](./sys/path.md), [ZString](./text/zstring.md) | 検査・加工対象の文字列（または文字列配列） | `String.slice 0 4 text`, `Regex.replace_all re rep text` |
 | 多次元配列・スライス | [Matrix](./numeric/matrix.md), [MatrixView](./numeric/matrix-view.md), [Tensor](./numeric/tensor.md), [Slice](./numeric/slice.md), [Gpu](./numeric/gpu.md) | 行列、ビュー、テンソル、スライス指定、GPU バッファ | `Matrix.get row col mat`, `MatrixView.write r c v view` |
-| メモリ領域・状態 | [Arena](./memory/arena.md), [Anchor](./memory/anchor.md), [Random](./sys/random.md), [Alloc](./testing/alloc.md) | アリーナ、アンカートークン、乱数生成器、統計値 | `Arena.insert val arena`, `Anchor.read f token`, `Alloc.since snap` |
+| メモリ領域・状態 | [Arena](./memory/arena.md), [Anchor](./memory/anchor.md), [Random](./sys/random.md), [RandomTensor](./numeric/random-tensor.md), [Alloc](./testing/alloc.md) | アリーナ、アンカートークン、乱数生成器（`Random.Pcg`・`Random.Pcg64`）と種の列、統計値 | `Arena.insert val arena`, `Anchor.read f token`, `Random.pcg64_normal loc scale rng`, `RandomTensor.normal loc scale shape rng`, `Alloc.since snap` |
 | 構造化データ | [Json](./encoding/json.md), [Gen](./testing/gen.md) | JSON 値・リーダー・ライター、ジェネレータ | `Json.write_bool true writer`, `Gen.map f gen` |
 
 ### 複数の対象をとる関数
