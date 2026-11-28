@@ -58,7 +58,7 @@ def main :: unit -> i32 = \() ->
 - **`Time.sleep d`**: 少なくとも `d` ナノ秒待機します（`d <= 0` のときは `Routine.yield` と同様に 1 回実行権を譲ります）。
 - **`Time.after d`**: `d` ナノ秒後に発火時点の単調時計ナノ秒を 1 回だけ送信する容量 1 の `Channel<i64>` を返します。[`select`](../../concurrency/select.md) のアームに指定することでタイムアウトを簡潔に記述できます（`select` のアームには一時式を直接書けないため、一度 `let` 変数に束縛してから渡します）。
 - **`Time.tick d`**: `d` ナノ秒周期で単調時計ナノ秒を送る容量 1 の `Channel<i64>` を返します（受信側が前回の値を受け取っていなければその周期の送信は破棄されます。返されたチャンネルの全ハンドルがドロップされると自動的に停止します。`d <= 0` はトラップします）。
-- **`Time.after_func d f`**: `d` ナノ秒後に `Owned.Function<unit, unit>` を新しい tzroutine 上で 1 回実行する [`Timer`](../sync/timer.md) を返します。
+- **`Time.after_func d f`**: `d` ナノ秒後に `Owned.Function<unit, unit>` を新しい tzroutine 上で 1 回実行する [`Timer`](../sync/timer.md) を返します。関数はワーカースレッドで実行されるため、UI などメインスレッドで行う遅延処理には [`MainThread.after`](../sync/mainthread.md) を使います。
 
 `Time.after`・`Time.tick` を参照すると自動的に `Channel` モジュールが、`Time.after_func` を参照すると自動的に `Timer` モジュールがロードされます。
 

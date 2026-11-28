@@ -12,7 +12,7 @@ Tsuzuri における**パッケージ**は、複数のモジュール・エデ�
 
 ## `Tsuzuri.toml` の全セクション仕様
 
-`Tsuzuri.toml` は決定論的に解析できる厳格な TOML サブセットを採用しています（最大 1 MiB、超過は `E1017`、シンボリックリンクは `E1011`）。最初に `[package]` セクションを置き、続けて `[dependencies]`・`[registry]`・`[capabilities]`・`[wasm]`・`[native]`・`[windows]` の各セクションを任意の順序で最大1回ずつ記述できます。未知のセクション・未知のキー・複数行配列は原因の行・列を指す `E0002` となります。
+`Tsuzuri.toml` は決定論的に解析できる厳格な TOML サブセットを採用しています（最大 1 MiB、超過は `E1017`、シンボリックリンクは `E1011`）。最初に `[package]` セクションを置き、続けて `[dependencies]`・`[registry]`・`[capabilities]`・`[wasm]`・`[native]`・`[windows]`・`[macos]` の各セクションを任意の順序で最大1回ずつ記述できます。未知のセクション・未知のキー・複数行配列は原因の行・列を指す `E0002` となります。
 
 ```toml
 [package]
@@ -43,6 +43,15 @@ search = ["libs"]
 
 [windows]
 subsystem = "console"
+
+[macos]
+min_version = "13.0"
+bundle_id = "org.example.billing"
+name = "Billing"
+version = "0.2.0"
+build = "17"
+icon = "assets/Billing.icns"
+resources = ["assets/help"]
 ```
 
 ### `[package]` セクション
@@ -67,11 +76,12 @@ subsystem = "console"
 
 旧エディションのパッケージは `tsuzuri fix --edition 2028 --from 2027 <dir>`（または `--from 2026`）によって、引数所有権（`own`）やスライス区間（`..<`）の意味を保ったまま自動移行できます。
 
-### ターゲット別ビルド設定セクション（`[wasm]`・`[native]`・`[windows]`）
+### ターゲット別ビルド設定セクション（`[wasm]`・`[native]`・`[windows]`・`[macos]`）
 
 - **`[wasm]`**: ルートパッケージの WebAssembly ビルド・テスト時の既定メモリ設定です。`max-memory`（既定 `"16MiB"`）と `stack-size`（既定 `"1MiB"`）をバイト数または `KiB` / `MiB` / `GiB` 単位の文字列で指定します（`"MB"` 等は `E0002`）。CLI フラグ `--wasm-max-memory` / `--wasm-stack-size` が優先されます。
 - **`[native]`**: C ABI 連携用のリンク入力を1行配列で指定します。`link`（C ソースやオブジェクトの相対パス）、`libraries`（`lib` 接頭辞や拡張子を除いたシステムライブラリ名、例: `["m"]`）、`search`（ライブラリ探索ディレクトリの相対パス）を合計 256 個まで記述できます。依存パッケージが `[native]` を持つ場合、親側の依存エントリで明示的に `native = true` を指定しなければ `E2000` で拒否されます。
 - **`[windows]`**: Windows 実行ファイル（`--emit exe`）の PE サブシステムとして `subsystem = "console"` または `"windows"` を指定します（非 Windows ターゲットやライブラリ出力では無視されます）。
+- **`[macos]`**: macOS 向けビルドの設定です。`min_version`（`"12.0"` 以降の最低 OS 版。Mach-O のコンパイルとリンクに使われ、省略時は `12.0`）と、アプリケーションバンドル（`tsuzuri build --emit app`）のキー `bundle_id`・`name`・`version`・`build`・`icon`・`resources`・`embed`・`info_plist`・`category`・`ui_element` を指定します。バンドルのキーの形は常に検査され（誤りは `E0002`）、値は `--emit app` だけが使います。`bundle_id` は `--emit app` で必須で、省略したキーを `[package]` から補うことはありません。パスはパッケージルートからの相対パスです。読まれるのはルートパッケージの節だけです（[macOS のアプリケーションバンドル](../compiler/macos-app-bundle.md)）。
 
 ## 依存関係の3形態（`[dependencies]`）
 

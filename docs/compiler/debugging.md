@@ -9,6 +9,7 @@
 - ブレークポイント設定やコールスタック表示には、内部リンカーシンボルではなく `Main.show` のような Tsuzuri の関数名をそのまま使用できます。
 - 単一のテストケースだけをデバッガーで追うには `tsuzuri test . --index N -g -o PATH` で専用ランナーバイナリをビルドし、引数 `0` を渡して起動します。
 - `tsuzuri run` でプログラムがトラップすると、`E2005` 診断の直下にトラップ地点からエントリーポイントまでのバックトレースが出力されます（macOS / Linux ネイティブ）。
+- macOS で Finder・Dock・`open`・launchd から起動した実行ファイルのトラップとランタイムの報告は、標準エラーの代わりに unified logging（subsystem `dev.tsuzuri.runtime`）へ送られ、Console.app と `log show` で読めます（[Finder から起動したアプリの報告](#finder-から起動したアプリの報告)）。
 
 ## デバッグ情報付きビルドと LLDB の起動
 
@@ -20,6 +21,7 @@ tsuzuri build . -g -O0 -o app
 
 - **Linux**: DWARF セクションが実行ファイル `app` に含まれるため、そのまま `lldb app` で起動できます。
 - **macOS**: `dsymutil` により `app.dwarf` が隣に生成されるため、実行前に `target symbols add` でシンボルを読み込みます。
+- **macOS のアプリケーションバンドル（`--emit app -g`）**: 平らな `.dwarf` の代わりに `Name.app.dSYM` がバンドルの隣に生成されます。UUID が実行ファイルと一致するので、`lldb Name.app` は `target symbols add` なしでシンボルを読み込みます（[macOS のアプリケーションバンドル](./macos-app-bundle.md)）。
 
 ```sh
 lldb \
@@ -164,6 +166,31 @@ tz-trap/1 2 0x2188000 0 0x1021884e4 0x10218856c 0x1021885c0
 ```
 
 各フィールドは順に「フォーマット版（`tz-trap/1`）」「`.trap.json` のサイト ID」「ASLR スライド値」「32 フレーム打ち切りフラグ（`0` または `1`）」「最内フレームからの戻りアドレス列」です。各戻りアドレスからスライド値と `1` を引いた値を `llvm-symbolizer --obj=<実行ファイル>`（macOS の `-g` では `<実行ファイル>.dwarf`）に渡すことで、本番環境で採取したログからオフラインで関数名とソース行を復元できます。
+
+### Finder から起動したアプリの報告
+
+macOS で Finder・Dock・`open` コマンド・launchd から起動したプロセスは、標準エラーが `/dev/null` になります。Tsuzuri でビルドした macOS の実行ファイル（`tsuzuri build --emit exe` と `tsuzuri run` が作るもの）は、標準エラーが閉じているか `/dev/null` のときに限り、プロセスを終わらせる報告を標準エラーの代わりに unified logging（`os_log`）へ送ります。端末・パイプ・ファイルへ向けた標準エラーには、これまでと同じバイト列を書きます。
+
+| category | 送られる報告 |
+| --- | --- |
+| `trap` | `--trap-info` のトラップの行（`trap: <理由> at <パス>:<行>:<列>`）、スタックのあふれ（`trap: stack overflow`）、`main` の終了後に呼ばれたコールバックの報告、実行環境に無い `@weak` の関数を呼んだときの報告 |
+| `runtime` | tzroutine ランタイムの報告（`Tsuzuri runtime: all tzroutines are asleep - deadlock!`、閉じた `Channel` への送信、負の `WaitGroup` の数など）、CPU 向けの版を選べなかったときの報告 |
+
+subsystem は `dev.tsuzuri.runtime`、記録の型は `Error` で、文は報告の文から末尾の改行を除いたものです。記録は Console.app か `log show` で読めます。
+
+```text
+$ ./Trap 2>/dev/null & pid=$!; wait $pid
+$ /usr/bin/log show --predicate "subsystem == \"dev.tsuzuri.runtime\" AND processID == $pid" --last 1m --style compact
+Timestamp               Ty Process[PID:TID]
+2026-11-28 07:32:12.184 E  Trap[28724:dbbd59] [dev.tsuzuri.runtime:trap] trap: integer division by zero at trap/Main.tz:1:34
+```
+
+- トラップの位置の行は、これまでと同じく `--trap-info` を付けたビルドだけが出します。tzroutine ランタイムの報告とスタックのあふれは、既定のビルドでも記録されます。
+- 送り先は、プロセスが最初に報告を書くときに標準エラーを 1 回調べて決め、そのあとは変えません。環境変数やオプションはなく、切り替えは自動です。
+- zsh には組み込みの `log` があるので、`/usr/bin/log` と書きます。
+- 特定の実行を引くときは、プロセス名ではなくプロセス ID（`processID == <pid>`）で絞ります。unified logging はプロセス名を実行ファイルの UUID から引くため、同じソースを別の名前でビルドした実行ファイルの記録が、先に記録された名前で表示されることがあります。
+- 環境変数 `OS_ACTIVITY_MODE=disable` などで OS が記録しないプロセスでは、何も残りません。
+- `--emit object` と `--emit shared` の出力は送りません。それらを組み込んだホストが、自分の標準エラーと記録を扱います。`tsuzuri test`・`tsuzuri bench` の実行ファイルと、`--overflow-report` の警告・`Debug.print`・`IO.*` の出力・`TSUZURI_TRAP_REPORT` の行も対象外です。
 
 ## 最適化時および WebAssembly の注意点
 

@@ -22,7 +22,7 @@
 | `--` | — | これ以降の引数をすべてオプションではなくファイル・ディレクトリパスとして解釈 |
 | `-o PATH`, `--output PATH` | 入力の拡張子を置換したパス | 成果物の出力ファイルパス（`doc` では必須の出力ディレクトリ、`bindgen` では必須の `.tz` ファイル、`test` では `-g` 併用時のランナー出力先）。親ディレクトリは自動作成される |
 | `--target native\|wasm32\|wasm64\|TRIPLE` | `native` | コード生成ターゲット。`build`・`test`（全ターゲット）、`run`（ネイティブのみ）、`bench`（ホスト同一ターゲットのみ）で有効。`TRIPLE` には対応 5 環境の 9 種のネイティブトリプルを指定可能（[対応プラットフォームとクロスコンパイル](./platforms.md) 参照） |
-| `--emit KIND` | ネイティブは `exe`、WASM は `wasm` | `build` 専用。`exe`・`object`・`llvm`・`header`・`wasm`・`wgsl`・`wgsl-relaxed`・`spirv`・`spirv-relaxed`・`shared`・`bitcode`・`bindings-js`・`bindings-cs`・`bindings-py`・`bindings-cpp` の 15 種から選択 |
+| `--emit KIND` | ネイティブは `exe`、WASM は `wasm` | `build` 専用。`exe`・`object`・`llvm`・`header`・`wasm`・`wgsl`・`wgsl-relaxed`・`spirv`・`spirv-relaxed`・`shared`・`bitcode`・`bindings-js`・`bindings-cs`・`bindings-py`・`bindings-cpp`・`app` の 16 種から選択 |
 | `--subsystem console\|windows` | `[windows]` の設定、未設定時は `console` | Windows ネイティブ実行ファイル（`build --emit exe` および `run`）の PE サブシステム。`windows` はコンソールウィンドウを生成しない。非 Windows ターゲットや `exe` 以外での指定は `E2000` |
 
 ### 最適化・コード生成バックエンド・サイズ削減・PGO
@@ -117,7 +117,7 @@
 
 ## 出力種別（`--emit`）と最適化の詳細
 
-### `--emit` の 15 種別と制約
+### `--emit` の 16 種別と制約
 
 - **`exe` / `wasm`**: ネイティブ実行ファイル（`--target native` または `TRIPLE`）および WebAssembly モジュール（`wasm32` / `wasm64`）。逆の組み合わせは `E2000` で拒否されます。
 - **`object` / `llvm` / `header`**: C/C++ ホスト等とリンクするオブジェクトファイル（`.o` / `.obj`）、LLVM IR テキスト（`.ll`）、および `export def` の C プロトタイプ宣言ヘッダー（`.h`）です。
@@ -125,6 +125,7 @@
 - **`bindings-js`**: `--target wasm32` 専用の JavaScript モジュール（`<name>.mjs`）および TypeScript 型宣言（`<name>.d.mts`）を生成します（[WebAssembly 出力](./webassembly.md) 参照）。
 - **`bitcode`**: ホスト側の C/C++ コードと同一バージョンの Clang で `-flto=thin` リンクし、小さな公開関数を呼び出し元へインライン化するための ThinLTO ビットコード（`.bc`）を出力します（Windows と `wasm64` を除くネイティブおよび `wasm32` に対応）。
 - **`wgsl` / `wgsl-relaxed` / `spirv` / `spirv-relaxed`**: 単一の `export` カーネル関数から WebGPU 用 WGSL シェーダーまたは Vulkan 用 SPIR-V バイナリを生成します（実験的機能。`-O`・`--target`・`--cpu`・`-g` 等とは併用不可）。
+- **`app`**: macOS のアプリケーションバンドル `Name.app` を生成します。macOS のホストと Apple のターゲット専用で（それ以外は `E2000`）、ルートの `Tsuzuri.toml` に `[macos] bundle_id` が必要です。中の実行ファイルは同じオプションの `exe` と同じもので、ad-hoc で署名し、`-g` は `Name.app.dSYM` を作ります（[macOS のアプリケーションバンドル](./macos-app-bundle.md) 参照）。
 
 ### 最適化レベルとサイズ削減
 

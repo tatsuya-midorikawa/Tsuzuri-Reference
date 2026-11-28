@@ -5,7 +5,7 @@ macOS（Apple Silicon）では、Objective-C のクラスを Tsuzuri の型と�
 ## 要点
 
 - `extern class NSWindow : NSResponder { ... }` でクラスを型として宣言します。値はムーブされ、drop のときに release されます。nil は `Maybe<C>` の `None` で表します。
-- 既定のクラスは作成したスレッドに束縛されます（`extern type local` と同じ規則）。どのスレッドからも使えるクラスは `extern class sync C : Base` と宣言します。
+- 既定のクラスは作成したスレッドに束縛されます（`extern type local` と同じ規則）。どのスレッドからも使えるクラスは `extern class sync C : Base`、メインスレッドからしか使えないクラス（AppKit の `NSWindow`・`NSView` など）は `extern class main C : Base` と宣言します。
 - メンバーは `C.member (ref receiver) args...` の形で呼び、`objc_msgSend` の直接の呼び出しに下がります。`bool` は `BOOL`、`f32`・`f64` は浮動小数点レジスター、`@c_layout` のレコードは構造体の値渡し・値返しです。
 - 結果の所有は Cocoa の命名規則（alloc・new・copy・mutableCopy・init の族）で決まります。retain・release を手で書く必要はありません。
 - 組み込みのモジュール `ObjC` が `retain`・`upcast`・`upcast_owned`・`downcast`・`sel`・`literal` を提供します。
@@ -14,7 +14,7 @@ macOS（Apple Silicon）では、Objective-C のクラスを Tsuzuri の型と�
 ## クラスの宣言
 
 ```text
-extern ["実行時名"] class [sync] Name : Base [ { メンバー... } ]
+extern ["実行時名"] class [sync | main] Name : Base [ { メンバー... } ]
 extern category Name : Class { メンバー... }
 ```
 
@@ -46,11 +46,14 @@ extern class sync NSNumber : NSObject
 | --- | --- | --- | --- |
 | `extern class C`・`ObjC.Object` | 強い参照を 1 つ所有（drop で release） | 作成したスレッドに束縛（非 `Send`・非 `Sync`、`pinned` 効果） | 関数値に捕捉できません（`E1005`） |
 | `extern class sync C` | 同上 | `Send` かつ `Sync` | tzroutine の本体へムーブでき、`Arc<C>` で共有できます |
+| `extern class main C` | 同上 | プロセスのメインスレッドに束縛（非 `Send`・非 `Sync`、`pinned` と `main_thread` 効果） | `extern type main` と同じ規則です。関数値に捕捉できません（`E1005`） |
 | `ObjC.Class`・`ObjC.Sel` | 所有なし（`Copy`） | `Send` かつ `Sync` | `Class` と `SEL` |
 
 - クラスの値は `Copy` でも `Clone` でもありません。参照を増やすときは `ObjC.retain` を使います。record・union・タプル・`Maybe`・`Vec`・配列に格納できます。
 - `Maybe<C>` はポインター 1 つで表され、`None` が nil です。`Maybe` でない `C` の位置に nil が返ると、境界で `null extern handle` のトラップになります。
 - `sync` の基底を持つクラスは `sync` でなければなりません（`E1008` `objc_class_sync_base`）。
+- `main` の基底を持つクラスは `main` でなければなりません（`E1008` `objc_class_main_base`）。`main` と `sync` は同時に書けません（`E0002` `extern_type_modifier_conflict`）。`main` も `sync` と同じ位置の文脈キーワードです。
+- `main` のクラスの値に触れる関数と、`main` のクラスへメッセージを送る関数（型に物体が現れないクラスメソッドも含みます）は `main_thread` 効果を持ちます。実行できるのは、`main` の本体、[`MainThread.post`・`after`](../stdlib/sync/mainthread.md) に直接渡した関数、および入口でスレッドを検査するコールバック・`FnPtr`・`export def` だけです。tzroutine などで起動すると `E1013`（`main_thread_code_spawned`）、関数値にすると `E1013`（`main_thread_function_value`）です（[メインスレッド専用ハンドル](./native-interop.md#メインスレッド専用ハンドルextern-type-main)）。
 - スレッドに束縛されたクラスを tzroutine や `Parallel.*` で開始する関数が触ると `E1013`（`pinned_code_spawned`）です。
 
 ## メンバーとメッセージ送信

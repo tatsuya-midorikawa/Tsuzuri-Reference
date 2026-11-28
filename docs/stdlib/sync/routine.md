@@ -104,6 +104,7 @@ $"pinned total={sum} procs_ok={procs_ok}"
 ```
 
 - スレッド固定はコールバックが返るまでのスコープに限定され、入れ子呼び出しにも対応しています（解除忘れが起きないスコープ設計）。
+- 固定する先は呼び出した OS スレッドです。`tzroutine` の中ではワーカースレッドであり、プロセスのメインスレッドへは移しません。メインスレッドでしか呼べない API（macOS の AppKit など）は `main` かメインスレッドが呼ぶコールバックの中で呼び、`tzroutine` からは [`MainThread.post`](./mainthread.md) で処理をメインスレッドへ戻します。メインスレッド専用のハンドルは `extern type main`・`extern class main` で宣言すると、`tzroutine` の中の `with_locked_thread` で触れるコードも `E1013`（`main_thread_code_spawned`）としてコンパイル時に拒否されます（[ネイティブ連携](../../compiler/native-interop.md)）。
 - 固定中の `tzroutine` が待機に入るとその OS スレッドもスリープしますが、論理プロセッサ `P` は別スレッドへ引き渡されるため、`TSUZURI_MAXPROCS=1` であっても他の `tzroutine` の進行は妨げられません。
 
 ## WebAssembly での動作
@@ -132,6 +133,7 @@ $"pinned total={sum} procs_ok={procs_ok}"
 ## 関連項目
 
 - [Owned](../memory/owned.md)
+- [MainThread](./mainthread.md)
 - [Channel](./channel.md)
 - [Parallel](./parallel.md)
 - [WaitGroup](./waitgroup.md)

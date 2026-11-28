@@ -6,7 +6,7 @@ Tsuzuri はガベージコレクタや重量級ランタイムへの依存なし
 
 - `--emit header` と `--emit object` を対で出力することで、C / C++ ホストから型安全なプロトタイプ宣言で Tsuzuri の関数をリンク・呼び出しできます。複数の Tsuzuri ライブラリのヘッダーを 1 つの翻訳単位で同時に `#include` することも可能です。
 - 公開 ABI はスカラー数値・`bool`・`unit` 戻り値・借用スライス・所有バッファ・文字列・スカラーレコード・`@c_layout` 構造体・不透明ハンドル（`extern type`）・静的コールバックをサポートします。ホストへ返却された所有バッファは `tsuzuri_free` で 1 回だけ解放します。
-- `extern type` にはムーブ専用の所有ハンドル、`copy`（非所有識別子）、`local`（OS スレッド拘束ハンドル）の 3 種があり、ネイティブでは `Maybe<Handle>` のゼロコスト NULL ニッチ表現や `ref mut`・`@count`・`ZString`・`extern view` を利用できます。
+- `extern type` にはムーブ専用の所有ハンドル、`copy`（非所有識別子）、`local`（OS スレッド拘束ハンドル）、`main`（メインスレッド専用ハンドル）の 4 種があり、ネイティブでは `Maybe<Handle>` のゼロコスト NULL ニッチ表現や `ref mut`・`@count`・`ZString`・`extern view` を利用できます。
 - macOS では Objective-C のクラスを `extern class` で型として宣言し、メソッドを型付きで呼び出せます（[Objective-C 連携](./objective-c.md)）。
 - `tsuzuri bindgen` は Clang AST から ABI が厳密に一致する C 宣言のみを抽出し、不一致な宣言は推測せず `W2002` と `// skipped` コメントで明示します。
 - `--emit shared` で `.dylib` / `.so` を生成し、`--emit bindings-cs`・`bindings-py`・`bindings-cpp` で C#（.NET 8 `LibraryImport`）・Python（`ctypes`）・C++20 の RAII バインディングを出力できます。
@@ -111,17 +111,62 @@ def helper :: i64 -> i64 = \x -> unused_ext x
 
 ### 不透明ハンドル（`extern type`）と NULL ニッチ表現
 
-ホスト側リソースのポインタを Tsuzuri 内で型安全に扱うため、3 種類の不透明ハンドル宣言が用意されています。
+ホスト側リソースのポインタを Tsuzuri 内で型安全に扱うため、4 種類の不透明ハンドル宣言が用意されています。
 
 | 宣言構文 | 満たす性質 | 用途と静的保証 |
 | --- | --- | --- |
 | `extern type Counter` | 非 Copy・`Send`（非 `Sync`） | `fopen` や独自オブジェクトなど、解放関数へムーブして 1 回だけ破棄すべき所有ハンドル |
 | `extern type copy Hwnd` | `Copy`・`Capture`・`Send`・`Sync` | Win32 の `HWND` やストックオブジェクトなど、呼び出し側が所有権を持たない識別子ハンドル |
 | `extern type local Hdc` | 非 Copy・非 `Capture`・非 `Send`・非 `Sync`（`pinned` 効果を誘導） | Win32 `HDC`、OpenGL コンテキスト、COM STA ポインタなど、取得した OS スレッド以外から触れてはならないスレッド拘束ハンドル |
+| `extern type main Window` | 非 Copy・非 `Capture`・非 `Send`・非 `Sync`（`pinned` と `main_thread` 効果を誘導） | AppKit のウィンドウやビューなど、プロセスのメインスレッドからしか触れてはならないハンドル |
 
 Objective-C の物体（`id`）は、不透明ハンドルの代わりに `extern class` で宣言します。値が強い参照を所有し、drop で release されます（[Objective-C 連携](./objective-c.md)）。
 
 `local` ハンドルを直接または間接に扱う関数にはコンパイラが自動的に `pinned` 効果を推論し、`tzroutine { ... }` や `Parallel.*` での別スレッド起動および一般クロージャへの格納を `E1013` で静的に禁止します（`Routine.with_locked_thread` や同期ロックヘルパー `Mutex.with_lock` 等には渡せます）。
+
+#### メインスレッド専用ハンドル（`extern type main`）
+
+`main` は `copy`・`local` と同じ規則の文脈キーワードです（`type` の直後にあり、同じ行に型名が続くときだけ修飾として読まれます。2 つを並べると `E0002` `extern_type_modifier_conflict`）。`main` ハンドル（`ref H` や `Maybe<H>` を含む）を直接または間接に扱う関数には、`pinned` に加えて `main_thread` 効果が推論されます。`main_thread` は `Routine.with_locked_thread` では止まりません。固定する先は呼び出した OS スレッドであり、`tzroutine` の中ではワーカースレッドだからです。
+
+`main_thread` 効果を持つ関数を実行できる場所は次のとおりです。
+
+| 場所 | スレッドの保証 |
+| --- | --- |
+| 実行ファイルの `main`（トップレベルのコード）から直接の呼び出しでたどれる本体。`main` の中の `Routine.with_locked_thread`・`Mutex.with_lock` などのコールバックを含む | `main` はメインスレッドで実行される |
+| [`MainThread.post`・`MainThread.after`](../stdlib/sync/mainthread.md) に `Owned.function` で直接渡した関数 | メインスレッドで呼ばれる（検査なし） |
+| コールバック `extern` の関数引数、`FnPtr.of`、`export def`、`test`、`bench`、ライブラリ出力の `tsuzuri_main` | 入口のラッパーが実行時にスレッドを検査する |
+
+入口の検査は、本体が `main_thread` 効果を持つラッパーにだけ入ります。メインスレッド以外から呼ばれると、標準エラーに `Tsuzuri runtime: a callback that uses main-thread handles was called on another thread` を書いてトラップします。
+
+```tsuzuri
+extern type main Window
+
+@trusted
+extern "make_window" def make_window :: unit -> Window
+
+@trusted
+extern "show_window" def show_window :: ref Window -> unit
+
+@trusted
+extern "on_click" def on_click :: (i64 -> unit) -> unit
+
+// Window に触れるので main_thread 効果を持つ
+def clicked :: i64 -> unit = \_button ->
+    let window = make_window ()
+    show_window (ref window)
+
+def main :: unit -> i32 = \() ->
+    // コールバックの位置: ラッパーが入口でメインスレッドかどうかを検査する
+    on_click clicked
+    0
+```
+
+それ以外の場所は `E1013` で拒否されます。
+
+- **`main_thread_code_spawned`**: `tzroutine { ... }` の本体、`Routine.go`・`WaitGroup.go`・`ErrGroup.go`・`Routine.scope`・`Time.after_func`・`Context.after_func`・`Parallel.*` の関数引数で起動した場合（`tzroutine` の中の `Routine.with_locked_thread` を経由しても同じです）。
+- **`main_thread_function_value`**: それ以外の位置で関数値にした場合（変数への束縛、レコードへの格納、`Dyn.of` など）。
+
+同じ関数値に `pinned_code_spawned`・`pinned_function_value` が重ねて報告されることはありません。入口の検査は Apple のターゲットでだけ生成できます。検査が必要なプログラムを他のネイティブターゲットへビルドすると `E2002`（`platform_unsupported_api`）、WebAssembly では `E2000`（`wasm_main_thread_unsupported`）です。`main` ハンドルを `main` の本体でだけ使い、検査の必要な入口を持たないプログラムは、どのターゲットでもビルドできます。Objective-C のクラスには同じ意味の `extern class main` を使います（[Objective-C 連携](./objective-c.md)）。
 
 ネイティブターゲットでは、非 `Maybe` の `H` および `ref H` は常に非 Null ポインタであることが境界で検査され、`NULL` が渡されると即座に `null extern handle` トラップとなります。`NULL` を取り得る引数や戻り値には **`Maybe<H>`・`Maybe<ref H>`・`Maybe<ref Record>`** を使用します。これらはタグを持たない 1 ポインタ（8 バイト、`None` = `NULL`、`Some` = 非 `NULL`）にゼロコストで表現されます。
 
@@ -258,6 +303,7 @@ clang -O3 -flto=thin host.c add.bc -o host
 
 - **`--allocator host`**: ヒープ確保をホスト定義の `void *tsuzuri_host_alloc(uint64_t size, uint64_t align)`・`tsuzuri_host_free`・`tsuzuri_host_realloc`（`align` は常に `16`、先頭 16 バイトは内部サイズヘッダー）へ委譲します。複数の tzroutine や `Parallel.*` スレッドから同時に呼ばれ得るため、ホスト側でスレッドセーフに実装し、ホストへ返った所有バッファの解放には引き続き `tsuzuri_free` を使用してください。
 - **イベントループとブロッキング呼び出し**: `export def` の呼び出しは内部で起動したすべての tzroutine が完了するまでホストへ戻りません。GUI の UI スレッドやイベントループをブロックしたくない場合は、ホスト側のワーカースレッドから `tz_*` を呼び出します。また、tzroutine 内から `extern` を呼ぶとスケジューラは自動的に論理プロセッサ `P` を他スレッドへ譲渡可能にし、コールバックで再入した際は元の OS スレッド上で継続します。
+- **報告の出力先**: `--emit object` や `--emit shared` の出力を組み込んだホストでは、tzroutine ランタイムなどの報告はホストの標準エラーへ書かれ、標準エラーの行き先はホストが決めます。macOS の実行ファイルが行う unified logging への送信（[Finder から起動したアプリの報告](./debugging.md#finder-から起動したアプリの報告)）は、object と共有ライブラリでは行いません。
 
 ## 関連項目
 
