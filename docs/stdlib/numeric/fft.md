@@ -56,7 +56,7 @@ match Fft.fft (Tensor.view x) with
 | `Fft.Options` | 1 次元の設定 `{ axis: i64, n: Maybe<i64>, norm: Fft.Norm }`。`axis` は負なら末尾から数え、`n` が `Maybe.None` なら軸の長さ |
 | `Fft.NdOptions` | N 次元の設定 `{ axes: Maybe<[i64]>, shape: Maybe<[i64]>, norm: Fft.Norm }`。`axes` が `Maybe.None` なら全軸（`shape` が k 個あれば最後の k 軸） |
 | `Fft.Plan<'a>` | 1 つの長さと向きの変換の計画（不透明なレコード）。変更できず、複数のスレッドが同時に借用できます |
-| `Fft.Error` | `EmptyAxis axis`・`InvalidAxis (axis, rank)`・`RepeatedAxis axis`・`InvalidLength n`・`LengthMismatch (expected, found)`・`ShapeMismatch (left, right)`。`Eq` と `Display` を持ちます |
+| `Fft.Error` | `EmptyAxis axis`・`InvalidAxis (axis, rank)`・`RepeatedAxis axis`・`InvalidLength n`・`LengthMismatch (expected, found)`。`Eq` と `Display` を持ちます |
 
 `n`（`shape`）が軸より長ければ入力の後ろを 0 で埋め、短ければ先頭の `n` 個だけを使います。`Fft.options()` は `{ axis: -1, n: Maybe.None, norm: Fft.Norm.Backward }`、`Fft.nd_options()` は `{ axes: Maybe.None, shape: Maybe.None, norm: Fft.Norm.Backward }` を返します。
 
