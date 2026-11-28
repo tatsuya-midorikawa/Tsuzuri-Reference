@@ -99,6 +99,7 @@ match summed with
 
 - 要素が **little-endian**（1 バイトの型はどちらでも）で、ファイルの中で**要素の境界に整列**していること。`np.save` と `TensorIO.save_npy` が書くファイルは 64 バイトに整列しています。big-endian のファイルと整列していないファイルは `Unmappable` です（`load_npy` なら読めます）。
 - `bool` のファイルは、0・1 以外のバイトがないことを、開くときに全体を 1 回読んで確かめます（あれば `Unmappable`）。
+- **通常のファイル**であること。ディレクトリー・FIFO・デバイスのパスは `Io` のエラーです（書き手のいない FIFO でも、開く段階で待ちません）。
 - 列優先（Fortran 順）のファイルは、並べ替えずにそのまま窓になります。
 - `open_mmap_safetensors name path` は、Safetensors のファイルの 1 つのテンソルを選びます。ヘッダー全体を `TensorCodec.decode_safetensors` と同じに検査します。
 
