@@ -165,6 +165,8 @@ Name.app.trap.json                --trap-info のとき
 
 - **署名の範囲**: ad-hoc の署名は、ビルドした Mac での実行と開発中の配布に使えます。ほかの利用者へ配るための Developer ID の署名・hardened runtime・entitlements・公証は、まだコンパイラにありません。
 - **プロジェクトの中の `.framework`**: モジュール探索はプロジェクトのディレクトリをすべてたどり、ディレクトリへのシンボリックリンクを `E1011` で拒みます。`Versions/Current` のようなリンクを持つ `.framework` は、プロジェクトのディレクトリの外に置いて `embed = ["../vendor/Foo.framework"]` のように指定し、それを埋め込んだバンドルの出力先（`-o`）もプロジェクトのディレクトリの外にしてください。
+- **標準出力と報告**: Finder・Dock・`open` から起動したアプリの標準出力と標準エラーは `/dev/null` です。`IO.writeln` の出力は見えませんが、トラップの位置の行（`--trap-info`）と tzroutine ランタイムの報告・スタックのあふれは unified logging（subsystem `dev.tsuzuri.runtime`）に残り、Console.app と `log show` で読めます（[Finder から起動したアプリの報告](./debugging.md#finder-から起動したアプリの報告)）。
+- **メインスレッド**: AppKit の呼び出しはメインスレッドで行います。tzroutine やコールバックからメインスレッドへ処理を戻すには [MainThread](../stdlib/sync/mainthread.md) を使います。
 - **App Translocation**: 隔離属性（quarantine）の付いたバンドルを Finder から開くと、OS が読み取り専用の別の場所へ移して起動します。`Env.executable_path` はその場所を返します。資源は実行ファイルからの相対で探し、バンドルの外のファイルを当てにしないでください。
 - **対応しない形**: Universal 2（Intel Mac）、App Sandbox と Mac App Store の提出、`.png` からのアイコンの変換、NIB・storyboard・asset catalog のコンパイル、`--emit shared` の dylib を `.framework` にすることには対応していません。
 - `run`・`test`・`bench` は `--emit` を受け付けません。バンドルの中の実行ファイルを端末から直接起動して確かめることはできます（`out/Probe.app/Contents/MacOS/Probe`）。
@@ -175,6 +177,7 @@ Name.app.trap.json                --trap-info のとき
 - [コンパイラオプションと環境変数](./options.md)
 - [対応プラットフォームとクロスコンパイル](./platforms.md)
 - [デバッグ](./debugging.md)
+- [MainThread](../stdlib/sync/mainthread.md)
 - [Objective-C 連携（`extern class` と `ObjC`）](./objective-c.md)
 - [Env](../stdlib/sys/env.md)
 - [診断メッセージとエラーコード](./diagnostics.md)
