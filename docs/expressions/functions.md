@@ -209,7 +209,7 @@ weighted_sum 10 items
 | 分類 | `pure def` 内で許可される操作 | 禁止される操作（`E1029`） |
 | --- | --- | --- |
 | 状態とメモリ | ローカル `let mut`、新しい配列・文字列の生成 | `Atomic`、`Mutex`、`RwMutex`、`DataChannel`、`Rc` / `Arc` の操作、利用者 `Drop` 型の保持・破棄 |
-| 入出力・乱数・時間 | 未実行の `IO<'a>` 値の構築（`IO.pure` / `IO.map`）、明示シードの `Random.pcg` | `IO` の実行、ファイル・OS・ネットワーク・無印 `extern`（`@trusted pure` を除く）、`Debug.print`、`Alloc` カウンタ観測、時計・OS 乱数 |
+| 入出力・乱数・時間 | 未実行の `IO<'a>` 値の構築（`IO.pure` / `IO.map`）、明示シードの `Random.pcg`・`Random.pcg64` と `pcg64_*` の分布、`RandomTensor` の生成関数 | `IO` の実行、ファイル・OS・ネットワーク・無印 `extern`（`@trusted pure` を除く）、`Debug.print`、`Alloc` カウンタ観測、時計・OS 乱数 |
 | 並行処理・動的呼び出し | 純粋なコールバックのみを用いた `Parallel.*` | `tzroutine { ... }`、`Routine.*`、`Time.after_func`、`Gpu.*`、`dyn` の構築と呼び出し、不透明な通常関数値 `A -> B` の呼び出し |
 
 ### 純粋関数型 pure (A -> B) とカリー化段階

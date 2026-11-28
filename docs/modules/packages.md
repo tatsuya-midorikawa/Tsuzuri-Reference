@@ -173,7 +173,7 @@ flowchart LR
 | `gpu` | `Gpu.request`・`Gpu.init`・`Gpu.map` などのデバイス操作 |
 | `net` | `Net` モジュールのソケット接続・バインド・送受信・名前解決（純粋な `Net.parse_address` 等は不要） |
 | `process` | `Process.run` による外部プロセス起動 |
-| `random` | OS 乱数を使う `Random.bytes`・`Random.next_u64`、`HashMap.randomized`、`Array.random_*` 等（シード指定の `Random.pcg` は不要） |
+| `random` | OS 乱数を使う `Random.bytes`・`Random.next_u64`、`HashMap.randomized`、`Array.random_*` 等・`Random.pcg64_from_os`（シード指定の `Random.pcg`・`Random.pcg64`、`pcg64_*` の分布、`RandomTensor` は不要） |
 | `stdio` | `IO` の標準入出力、`Debug.print` / `Debug.trace`、および値を表示する `Main.tz` トップレベル式 |
 | `time` | `Time` モジュールの時刻取得・スリープ、`Bench` の計測 |
 
