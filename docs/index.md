@@ -185,6 +185,8 @@
 
 - [Json](./stdlib/encoding/json.md) — RFC 8259 準拠の JSON パーサー・シリアライザ、`Encode` / `Decode` 型クラス、ストリーミング処理
 - [Cbor](./stdlib/encoding/cbor.md) — RFC 8949 準拠のコンパクトなバイナリ表現 CBOR のエンコード・デコード
+- [TensorCodec](./stdlib/encoding/tensor-codec.md) — テンソルのファイル形式（NumPy の `.npy`・`.npz`、Safetensors、CSV）の純粋な変換、Deflate／Inflate、要素型の型クラス `TensorElement`
+- [TensorIO](./stdlib/encoding/tensor-io.md) — テンソルのファイルの読み書きと、要素を複写しない読み取り専用のメモリーマップ
 
 ### テスト・プロパティ検証・ベンチマーク (`docs/stdlib/testing/`)
 
