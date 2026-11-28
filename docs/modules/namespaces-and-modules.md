@@ -161,12 +161,12 @@ HashMap     HashSet     IO          Int         Json        Linalg
 List        MainThread  Map         Math        Matrix      MatrixView
 Maybe       Monoid      Monoids     Mutex       Net         ObjC
 Once        OnceValue   Os          Owned       Parallel    Path
-Polynomial  Process     Random      Rc          ReceiveOnly Regex
-RegexText   Result      Routine     RwMutex     Semaphore   SendOnly
-Seq         Set         Simd        Slice       String      SyncMap
-Tensor      Test        Text        Ticker      Time        Timer
-Unicode     Utf8Char    Utf8String  Vec         WaitGroup   ZString
-ZUtf8String
+Polynomial  Process     Random      RandomTensorRc          ReceiveOnly
+Regex       RegexText   Result      Routine     RwMutex     Semaphore
+SendOnly    Seq         Set         Simd        Slice       String
+SyncMap     Tensor      TensorCodec TensorElementTensorIO    Test
+Text        Ticker      Time        Timer       Unicode     Utf8Char
+Utf8String  Vec         WaitGroup   ZString     ZUtf8String
 ```
 
 `ObjC`（Objective-C 連携）・`Routine`・`FnPtr` などは、ソースファイルを持たない組み込みのモジュールです。
