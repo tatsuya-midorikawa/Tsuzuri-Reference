@@ -138,6 +138,8 @@
 - [MatrixView](./stdlib/numeric/matrix-view.md) — コピーなしで部分行列・行・列・転置を参照または排他更新するビュー
 - [Tensor](./stdlib/numeric/tensor.md) — 任意次元配列 `Tensor<'a>` のブロードキャスト演算・軸操作・ビュー・インプレースカーネル
 - [RandomTensor](./stdlib/numeric/random-tensor.md) — 乱数のテンソル生成（16 の分布）、ディリクレ分布・多変量正規分布、並べ替えと重み付き抽出（opt-in）
+- [Fft](./stdlib/numeric/fft.md) — 任意長の高速フーリエ変換（複素・実数・N 次元）、繰り返し用の計画 `Fft.Plan<'a>`、並列バッチ変換
+- [Polynomial](./stdlib/numeric/polynomial.md) — 多項式の評価・四則演算・微積分・最小二乗フィッティング・求根、Chebyshev / Legendre 級数
 - [Simd](./stdlib/numeric/simd.md) — 128-bit / 256-bit 固定幅 SIMD ベクトル型のロード・ストア・レーン演算・水平リダクション
 - [Gpu](./stdlib/numeric/gpu.md) — WebGPU / Vulkan コンピュートカーネルのデバイス要求とデータ並列ディスパッチ（実験的）
 
