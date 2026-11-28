@@ -23,6 +23,7 @@ Tsuzuri の標準ライブラリとコンパイラ組み込み関数は、モジ
 | 多次元配列・スライス | [Matrix](./numeric/matrix.md), [MatrixView](./numeric/matrix-view.md), [Tensor](./numeric/tensor.md), [Slice](./numeric/slice.md), [Gpu](./numeric/gpu.md) | 行列、ビュー、テンソル、スライス指定、GPU バッファ | `Matrix.get row col mat`, `MatrixView.write r c v view` |
 | メモリ領域・状態 | [Arena](./memory/arena.md), [Anchor](./memory/anchor.md), [Random](./sys/random.md), [Alloc](./testing/alloc.md) | アリーナ、アンカートークン、乱数生成器、統計値 | `Arena.insert val arena`, `Anchor.read f token`, `Alloc.since snap` |
 | 構造化データ | [Json](./encoding/json.md), [Gen](./testing/gen.md) | JSON 値・リーダー・ライター、ジェネレータ | `Json.write_bool true writer`, `Gen.map f gen` |
+| テンソルのファイル | [TensorCodec](./encoding/tensor-codec.md), [TensorIO](./encoding/tensor-io.md) | 窓、`Raw`、アーカイブ、バイト列・テキスト、マップしたファイル | `TensorCodec.archive_get name archive`, `TensorIO.save_npy path view` |
 
 ### 複数の対象をとる関数
 
